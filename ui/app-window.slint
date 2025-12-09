@@ -1,89 +1,120 @@
-// Copyright © SixtyFPS GmbH <info@slint.dev>
-// SPDX-License-Identifier: MIT
-
-import { LineEdit, Button, Slider, StandardListView, GridBox, HorizontalBox } from "std-widgets.slint";
+// Taxman - Hybrid Taxonomy Management System
+import { LineEdit, Button, StandardListView, GridBox, HorizontalBox, VerticalBox } from "std-widgets.slint";
 
 export component MainWindow inherits Window {
-    in property <[StandardListViewItem]> names-list;
-    out property <int> current-item: list.current-item;
-    out property <string> name;
-    out property <string> surname;
-    out property <string> prefix;
-    callback prefixEdited();
-    callback createClicked();
-    callback updateClicked();
-    callback deleteClicked();
+    // Window properties
+    in property <string> window-title <=> root.title;
+    in property <string> status-message;
+    in property <string> taxonomy-description;
+    in property <string> hierarchy-root;
+    in property <[StandardListViewItem]> items-list;
 
-    GridBox {
-        filter-label := Text {
-            text: "Filter prefix:";
-            vertical-alignment: center;
-            horizontal-alignment: right;
-        }
+    // File operation callbacks
+    callback file-open();
+    callback file-save();
+    callback file-save-as();
+    callback file-new();
 
-        LineEdit {
-            text <=> root.prefix;
-            edited => { root.prefixEdited() }
-            accessible-label: filter-label.accessible-label;
-        }
+    min-width: 800px;
+    min-height: 600px;
 
-        list := StandardListView {
-            row: 1;
-            rowspan: 3;
-            colspan: 2;
-            model: root.names-list;
-            accessible-label: "Names";
-        }
-
-        name-label := Text {
-            col: 2;
-            row: 1;
-            text: "Name: ";
-            vertical-alignment: center;
-            horizontal-alignment: right;
-        }
-
-        LineEdit {
-            text <=> root.name;
-            accessible-label: name-label.accessible-label;
-        }
-
-        surname-label := Text {
-            col: 2;
-            row: 2;
-            text: "Surname: ";
-            vertical-alignment: center;
-            horizontal-alignment: right;
-        }
-
-        LineEdit {
-            text <=> root.surname;
-            accessible-label: surname-label.accessible-label;
-        }
-
+    VerticalBox {
+        // Toolbar
         HorizontalBox {
-            padding-left: 0;
-            padding-bottom: 0;
-            row: 4;
-            alignment: start;
+            height: 40px;
+            padding: 8px;
+            spacing: 8px;
 
             Button {
-                clicked => { root.createClicked() }
-
-                text: "Create";
+                text: "New";
+                clicked => { root.file-new(); }
             }
+
             Button {
-                clicked => { root.updateClicked() }
-
-                text: "Update";
-                enabled: list.current-item != -1 && list.current-item < root.names-list.length;
-
+                text: "Open...";
+                clicked => { root.file-open(); }
             }
-            Button {
-                clicked => { root.deleteClicked() }
 
-                text: "Delete";
-                enabled: list.current-item != -1 && list.current-item < root.names-list.length;
+            Button {
+                text: "Save";
+                clicked => { root.file-save(); }
+            }
+
+            Button {
+                text: "Save As...";
+                clicked => { root.file-save-as(); }
+            }
+        }
+
+        // Main content area
+        VerticalBox {
+            padding: 16px;
+            spacing: 16px;
+
+            // Taxonomy description
+            if root.taxonomy-description != "" : VerticalBox {
+                spacing: 4px;
+                Text {
+                    text: "Description:";
+                    font-weight: 700;
+                }
+                Text {
+                    text: root.taxonomy-description;
+                    wrap: word-wrap;
+                }
+            }
+
+            // Hierarchy root
+            if root.hierarchy-root != "" : HorizontalBox {
+                spacing: 8px;
+                Text {
+                    text: "Hierarchy Root:";
+                    font-weight: 700;
+                }
+                Text {
+                    text: root.hierarchy-root;
+                }
+            }
+
+            // Items list
+            if root.items-list.length > 0 : VerticalBox {
+                spacing: 8px;
+                Text {
+                    text: "Items:";
+                    font-weight: 700;
+                }
+                StandardListView {
+                    model: root.items-list;
+                }
+            }
+
+            // Empty state
+            if root.taxonomy-description == "" && root.hierarchy-root == "" : VerticalBox {
+                alignment: center;
+                Text {
+                    text: "No taxonomy loaded";
+                    font-size: 18px;
+                    horizontal-alignment: center;
+                }
+                Text {
+                    text: "Click 'Open...' to load a taxonomy file or 'New' to create one";
+                    horizontal-alignment: center;
+                }
+            }
+        }
+
+        // Status bar
+        Rectangle {
+            height: 30px;
+            background: #f0f0f0;
+
+            HorizontalBox {
+                padding: 8px;
+
+                Text {
+                    text: root.status-message;
+                    vertical-alignment: center;
+                }
             }
         }
     }
