@@ -1,0 +1,165 @@
+{
+  "taxonomy_description": "Hybrid taxonomy for stocks combining classical hierarchical structure with faceted classification",
+  "classical_hierarchy": {
+    "root": "Stock",
+    "children": [
+      {
+        "genus": "Stock",
+        "species": "Common Stock",
+        "differentia": "represents ownership with voting rights",
+        "children": [
+          {
+            "genus": "Common Stock",
+            "species": "Growth Stock",
+            "differentia": "expected to grow faster than market average"
+          },
+          {
+            "genus": "Common Stock",
+            "species": "Value Stock",
+            "differentia": "trading below intrinsic value"
+          },
+          {
+            "genus": "Common Stock",
+            "species": "Dividend Stock",
+            "differentia": "regularly pays significant dividends"
+          }
+        ]
+      },
+      {
+        "genus": "Stock",
+        "species": "Preferred Stock",
+        "differentia": "priority claims on assets and dividends, limited voting rights",
+        "children": [
+          {
+            "genus": "Preferred Stock",
+            "species": "Cumulative Preferred",
+            "differentia": "accumulates unpaid dividends"
+          },
+          {
+            "genus": "Preferred Stock",
+            "species": "Convertible Preferred",
+            "differentia": "can be converted to common stock"
+          }
+        ]
+      }
+    ]
+  },
+  "faceted_dimensions": {
+    "market_cap": ["nano_cap", "micro_cap", "small_cap", "mid_cap", "large_cap", "mega_cap"],
+    "sector": ["technology", "healthcare", "financials", "consumer_discretionary", "consumer_staples", "energy", "utilities", "industrials", "materials", "real_estate", "communication_services"],
+    "volatility": ["very_low", "low", "moderate", "high", "very_high"],
+    "liquidity": ["illiquid", "low", "moderate", "high", "very_high"],
+    "dividend_yield": ["none", "low", "moderate", "high", "very_high"],
+    "growth_stage": ["startup", "early_growth", "rapid_growth", "mature", "declining"],
+    "geographic_focus": ["domestic", "regional", "international", "global"],
+    "risk_profile": ["conservative", "moderate", "aggressive", "speculative"],
+    "price_trend": ["strong_downtrend", "downtrend", "sideways", "uptrend", "strong_uptrend"],
+    "analyst_rating": ["strong_sell", "sell", "hold", "buy", "strong_buy"],
+    "esg_rating": ["poor", "below_average", "average", "above_average", "excellent"]
+  },
+  "example_items": [
+    {
+      "name": "Apple Inc. (AAPL)",
+      "classical_path": ["Stock", "Common Stock", "Growth Stock"],
+      "facets": {
+        "market_cap": "mega_cap",
+        "sector": "technology",
+        "volatility": "moderate",
+        "liquidity": "very_high",
+        "dividend_yield": "low",
+        "growth_stage": "mature",
+        "geographic_focus": "global",
+        "risk_profile": "moderate",
+        "price_trend": "uptrend",
+        "analyst_rating": "buy",
+        "esg_rating": "above_average"
+      }
+    },
+    {
+      "name": "Johnson & Johnson (JNJ)",
+      "classical_path": ["Stock", "Common Stock", "Dividend Stock"],
+      "facets": {
+        "market_cap": "mega_cap",
+        "sector": "healthcare",
+        "volatility": "low",
+        "liquidity": "very_high",
+        "dividend_yield": "moderate",
+        "growth_stage": "mature",
+        "geographic_focus": "global",
+        "risk_profile": "conservative",
+        "price_trend": "sideways",
+        "analyst_rating": "hold",
+        "esg_rating": "average"
+      }
+    },
+    {
+      "name": "Berkshire Hathaway Class B (BRK.B)",
+      "classical_path": ["Stock", "Common Stock", "Value Stock"],
+      "facets": {
+        "market_cap": "mega_cap",
+        "sector": "financials",
+        "volatility": "low",
+        "liquidity": "very_high",
+        "dividend_yield": "none",
+        "growth_stage": "mature",
+        "geographic_focus": "domestic",
+        "risk_profile": "moderate",
+        "price_trend": "uptrend",
+        "analyst_rating": "buy",
+        "esg_rating": "average"
+      }
+    },
+    {
+      "name": "Tesla Inc. (TSLA)",
+      "classical_path": ["Stock", "Common Stock", "Growth Stock"],
+      "facets": {
+        "market_cap": "large_cap",
+        "sector": "consumer_discretionary",
+        "volatility": "very_high",
+        "liquidity": "very_high",
+        "dividend_yield": "none",
+        "growth_stage": "rapid_growth",
+        "geographic_focus": "global",
+        "risk_profile": "aggressive",
+        "price_trend": "strong_uptrend",
+        "analyst_rating": "hold",
+        "esg_rating": "above_average"
+      }
+    },
+    {
+      "name": "NextEra Energy (NEE)",
+      "classical_path": ["Stock", "Common Stock", "Dividend Stock"],
+      "facets": {
+        "market_cap": "large_cap",
+        "sector": "utilities",
+        "volatility": "low",
+        "liquidity": "high",
+        "dividend_yield": "moderate",
+        "growth_stage": "mature",
+        "geographic_focus": "domestic",
+        "risk_profile": "conservative",
+        "price_trend": "uptrend",
+        "analyst_rating": "buy",
+        "esg_rating": "excellent"
+      }
+    },
+    {
+      "name": "Rivian Automotive (RIVN)",
+      "classical_path": ["Stock", "Common Stock", "Growth Stock"],
+      "facets": {
+        "market_cap": "small_cap",
+        "sector": "consumer_discretionary",
+        "volatility": "very_high",
+        "liquidity": "moderate",
+        "dividend_yield": "none",
+        "growth_stage": "early_growth",
+        "geographic_focus": "domestic",
+        "risk_profile": "speculative",
+        "price_trend": "downtrend",
+        "analyst_rating": "hold",
+        "esg_rating": "above_average"
+      },
+      "note": "High-growth EV startup with significant volatility - demonstrates multi-faceted risk assessment"
+    }
+  ]
+}
