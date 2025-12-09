@@ -1,5 +1,5 @@
 // Taxman - Hybrid Taxonomy Management System
-import { LineEdit, Button, StandardListView, GridBox, HorizontalBox, VerticalBox } from "std-widgets.slint";
+import { LineEdit, Button, StandardListView, GridBox, HorizontalBox, VerticalBox, ScrollView } from "std-widgets.slint";
 
 export component MainWindow inherits Window {
     // Window properties
@@ -9,14 +9,22 @@ export component MainWindow inherits Window {
     in property <string> hierarchy-root;
     in property <[StandardListViewItem]> items-list;
 
+    // Selected item properties
+    in-out property <int> selected-item-index: -1;
+    in property <string> selected-item-name;
+    in property <string> selected-item-path;
+
     // File operation callbacks
     callback file-open();
     callback file-save();
     callback file-save-as();
     callback file-new();
 
-    min-width: 800px;
-    min-height: 600px;
+    // Item selection callback
+    callback item-selected(int);
+
+    min-width: 1000px;
+    min-height: 700px;
 
     VerticalBox {
         // Toolbar
@@ -44,61 +52,272 @@ export component MainWindow inherits Window {
                 text: "Save As...";
                 clicked => { root.file-save-as(); }
             }
+
+            Rectangle {
+                // Spacer
+                horizontal-stretch: 1;
+            }
+
+            Text {
+                text: root.taxonomy-description != "" ? root.taxonomy-description : "No taxonomy loaded";
+                vertical-alignment: center;
+                color: #555;
+                font-size: 12px;
+            }
         }
 
-        // Main content area
-        VerticalBox {
-            padding: 16px;
-            spacing: 16px;
+        // Main 3-panel layout
+        HorizontalBox {
+            spacing: 0;
 
-            // Taxonomy description
-            if root.taxonomy-description != "" : VerticalBox {
-                spacing: 4px;
-                Text {
-                    text: "Description:";
-                    font-weight: 700;
+            // Left panel - Hierarchy Tree
+            Rectangle {
+                width: 250px;
+                background: #fafafa;
+                border-width: 1px;
+                border-color: #ddd;
+
+                VerticalBox {
+
+                // Panel header
+                Rectangle {
+                    height: 30px;
+                    background: #e8e8e8;
+
+                    HorizontalBox {
+                        padding: 6px;
+
+                        Text {
+                            text: "Hierarchy";
+                            font-weight: 700;
+                            vertical-alignment: center;
+                            color: #000;
+                        }
+                    }
                 }
-                Text {
-                    text: root.taxonomy-description;
-                    wrap: word-wrap;
+
+                // Panel content
+                ScrollView {
+                    VerticalBox {
+                        padding: 8px;
+
+                        if root.hierarchy-root != "" : VerticalBox {
+                            spacing: 4px;
+
+                            Text {
+                                text: "Root:";
+                                font-size: 10px;
+                                color: #666;
+                            }
+
+                            Text {
+                                text: root.hierarchy-root;
+                                font-weight: 700;
+                                color: #000;
+                            }
+
+                            Rectangle {
+                                height: 8px;
+                            }
+
+                            Text {
+                                text: "Hierarchy tree will be implemented in Phase 4";
+                                font-size: 11px;
+                                color: #999;
+                                wrap: word-wrap;
+                            }
+                        }
+
+                        if root.hierarchy-root == "" : Text {
+                            text: "No taxonomy loaded";
+                            color: #999;
+                        }
+                    }
+                }
                 }
             }
 
-            // Hierarchy root
-            if root.hierarchy-root != "" : HorizontalBox {
-                spacing: 8px;
-                Text {
-                    text: "Hierarchy Root:";
-                    font-weight: 700;
+            // Center panel - Items List
+            Rectangle {
+                horizontal-stretch: 1;
+                background: #333333;
+                border-width: 1px;
+                border-color: #ddd;
+
+                VerticalBox {
+
+                // Panel header
+                Rectangle {
+                    height: 30px;
+                    background: #e8e8e8;
+
+                    HorizontalBox {
+                        padding: 6px;
+
+                        Text {
+                            text: "Items (" + root.items-list.length + ")";
+                            font-weight: 700;
+                            vertical-alignment: center;
+                            color: #000;
+                        }
+                    }
                 }
-                Text {
-                    text: root.hierarchy-root;
+
+                // Panel content
+                VerticalBox {
+                    if root.items-list.length > 0 : items-view := StandardListView {
+                        model: root.items-list;
+                        current-item <=> root.selected-item-index;
+                        current-item-changed(index) => {
+                            root.item-selected(index);
+                        }
+                    }
+
+                    if root.items-list.length == 0 : VerticalBox {
+                        alignment: center;
+
+                        Text {
+                            text: root.taxonomy-description != "" ? "No items in taxonomy" : "No taxonomy loaded";
+                            color: #999;
+                            horizontal-alignment: center;
+                        }
+                    }
+                }
                 }
             }
 
-            // Items list
-            if root.items-list.length > 0 : VerticalBox {
-                spacing: 8px;
-                Text {
-                    text: "Items:";
-                    font-weight: 700;
+            // Right panel - Details/Edit
+            Rectangle {
+                width: 300px;
+                background: #fafafa;
+                border-width: 1px;
+                border-color: #ddd;
+
+                VerticalBox {
+
+                // Panel header
+                Rectangle {
+                    height: 30px;
+                    background: #e8e8e8;
+
+                    HorizontalBox {
+                        padding: 6px;
+
+                        Text {
+                            text: "Details";
+                            font-weight: 700;
+                            vertical-alignment: center;
+                            color: #000;
+                        }
+                    }
                 }
-                StandardListView {
-                    model: root.items-list;
+
+                // Panel content
+                ScrollView {
+                    VerticalBox {
+                        padding: 12px;
+                        spacing: 8px;
+
+                        if root.selected-item-name != "" : VerticalBox {
+                            spacing: 12px;
+
+                            // Item name
+                            VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: "Name:";
+                                    font-size: 10px;
+                                    color: #666;
+                                }
+
+                                Text {
+                                    text: root.selected-item-name;
+                                    font-weight: 700;
+                                    font-size: 14px;
+                                    color: #000;
+                                }
+                            }
+
+                            // Item path
+                            if root.selected-item-path != "" : VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: "Classification Path:";
+                                    font-size: 10px;
+                                    color: #666;
+                                }
+
+                                Text {
+                                    text: root.selected-item-path;
+                                    wrap: word-wrap;
+                                    color: #000;
+                                }
+                            }
+
+                            Rectangle {
+                                height: 1px;
+                                background: #ddd;
+                            }
+
+                            Text {
+                                text: "Full editing will be implemented in Phase 6";
+                                font-size: 11px;
+                                color: #999;
+                                wrap: word-wrap;
+                            }
+                        }
+
+                        if root.selected-item-name == "" && root.taxonomy-description != "" : Text {
+                            text: "Select an item to view details";
+                            color: #999;
+                        }
+
+                        if root.taxonomy-description == "" : Text {
+                            text: "No taxonomy loaded";
+                            color: #999;
+                        }
+                    }
+                }
                 }
             }
+        }
 
-            // Empty state
-            if root.taxonomy-description == "" && root.hierarchy-root == "" : VerticalBox {
-                alignment: center;
-                Text {
-                    text: "No taxonomy loaded";
-                    font-size: 18px;
-                    horizontal-alignment: center;
+        // Bottom panel - Facet Filters (collapsible placeholder)
+        Rectangle {
+            height: 100px;
+            background: #f5f5f5;
+            border-width: 1px;
+            border-color: #ddd;
+
+            VerticalBox {
+                // Panel header
+                Rectangle {
+                    height: 30px;
+                    background: #e8e8e8;
+
+                    HorizontalBox {
+                        padding: 6px;
+
+                        Text {
+                            text: "Facet Filters";
+                            font-weight: 700;
+                            vertical-alignment: center;
+                            color: #000;
+                        }
+                    }
                 }
-                Text {
-                    text: "Click 'Open...' to load a taxonomy file or 'New' to create one";
-                    horizontal-alignment: center;
+
+                // Panel content
+                HorizontalBox {
+                    padding: 12px;
+
+                    Text {
+                        text: "Facet filtering will be implemented in Phase 5";
+                        color: #999;
+                        vertical-alignment: center;
+                    }
                 }
             }
         }
@@ -114,6 +333,7 @@ export component MainWindow inherits Window {
                 Text {
                     text: root.status-message;
                     vertical-alignment: center;
+                    color: #000;
                 }
             }
         }

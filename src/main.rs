@@ -131,6 +131,31 @@ pub fn main() {
     // Set initial window title
     main_window.set_window_title(SharedString::from("Taxman - No file loaded"));
 
+    // Item selection handler
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_item_selected(move |index| {
+            let main_window = main_window_weak.unwrap();
+            let state_borrow = state.borrow();
+
+            if let Some(ref taxonomy) = state_borrow.taxonomy {
+                if let Some(ref items) = taxonomy.example_items {
+                    if index >= 0 && (index as usize) < items.len() {
+                        let item = &items[index as usize];
+
+                        // Update selected item properties
+                        main_window.set_selected_item_name(SharedString::from(&item.name));
+                        main_window.set_selected_item_path(SharedString::from(
+                            item.classical_path.join(" → ")
+                        ));
+                    }
+                }
+            }
+        });
+    }
+
     // File -> Open
     {
         let main_window_weak = main_window.as_weak();
@@ -149,13 +174,16 @@ pub fn main() {
                 {
                     let path = file.path().to_path_buf();
 
-                    match state.borrow_mut().load_from_file(path) {
+                    // Load the file (borrow mutably, then drop the borrow)
+                    let load_result = state.borrow_mut().load_from_file(path);
+
+                    match load_result {
                         Ok(_) => {
-                            // Update window title
+                            // Update window title (borrow immutably)
                             let title = state.borrow().get_window_title();
                             main_window.set_window_title(SharedString::from(title));
 
-                            // Update UI with loaded data
+                            // Update UI with loaded data (borrow immutably)
                             update_ui_from_state(&main_window, &state.borrow());
 
                             main_window.set_status_message(SharedString::from("File loaded successfully"));
@@ -179,7 +207,9 @@ pub fn main() {
         main_window.on_file_save(move || {
             let main_window = main_window_weak.unwrap();
 
-            match state.borrow_mut().save() {
+            let save_result = state.borrow_mut().save();
+
+            match save_result {
                 Ok(_) => {
                     let title = state.borrow().get_window_title();
                     main_window.set_window_title(SharedString::from(title));
@@ -212,7 +242,9 @@ pub fn main() {
                 {
                     let path = file.path().to_path_buf();
 
-                    match state.borrow_mut().save_as(path) {
+                    let save_result = state.borrow_mut().save_as(path);
+
+                    match save_result {
                         Ok(_) => {
                             let title = state.borrow().get_window_title();
                             main_window.set_window_title(SharedString::from(title));
@@ -237,8 +269,10 @@ pub fn main() {
         main_window.on_file_new(move || {
             let main_window = main_window_weak.unwrap();
 
+            // Create new (drops mutable borrow immediately)
             state.borrow_mut().create_new();
 
+            // Now borrow immutably
             let title = state.borrow().get_window_title();
             main_window.set_window_title(SharedString::from(title));
 
@@ -253,19 +287,32 @@ pub fn main() {
 
 /// Update the UI from the current application state
 fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
+    // Clear selected item
+    main_window.set_selected_item_index(-1);
+    main_window.set_selected_item_name(SharedString::from(""));
+    main_window.set_selected_item_path(SharedString::from(""));
+
     if let Some(ref taxonomy) = state.taxonomy {
         // Update taxonomy description
         let description = taxonomy.taxonomy_description
             .as_ref()
             .map(|s| s.as_str())
             .unwrap_or("");
+
+        eprintln!("DEBUG: Setting taxonomy description: '{}'", description);
         main_window.set_taxonomy_description(SharedString::from(description));
 
         // Update hierarchy root
+        eprintln!("DEBUG: Setting hierarchy root: '{}'", taxonomy.classical_hierarchy.root);
         main_window.set_hierarchy_root(SharedString::from(&taxonomy.classical_hierarchy.root));
 
         // Update items list
         if let Some(ref items) = taxonomy.example_items {
+            eprintln!("DEBUG: Loading {} items", items.len());
+            for (i, item) in items.iter().enumerate() {
+                eprintln!("DEBUG: Item {}: '{}'", i, item.name);
+            }
+
             let items_model = Rc::new(VecModel::from(
                 items.iter().map(|item| {
                     StandardListViewItem::from(SharedString::from(&item.name))
