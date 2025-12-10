@@ -286,6 +286,142 @@ pub fn main() {
         });
     }
 
+    // Sort -> By Name
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_sort_by_name(move || {
+            let main_window = main_window_weak.unwrap();
+            let state_borrow = state.borrow();
+
+            if let Some(ref taxonomy) = state_borrow.taxonomy {
+                if let Some(ref items) = taxonomy.example_items {
+                    // Clone items for sorting (don't modify the taxonomy)
+                    let mut sorted_items = items.clone();
+
+                    // Sort by name using taxman-core
+                    sort_items(&mut sorted_items, "name");
+
+                    // Update UI with sorted items
+                    let items_model = Rc::new(VecModel::from(
+                        sorted_items.iter().map(|item| {
+                            StandardListViewItem::from(SharedString::from(&item.name))
+                        }).collect::<Vec<_>>()
+                    ));
+                    main_window.set_items_list(items_model.into());
+                    main_window.set_status_message(SharedString::from("Items sorted by name"));
+                }
+            }
+        });
+    }
+
+    // Apply Filters
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_apply_filters(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Get the genus filter text
+            let genus_text = main_window.get_genus_filter_text().to_string();
+
+            // Parse comma-separated genera
+            let genera: Vec<String> = genus_text
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+
+            // Get the facet filter text
+            let facet_text = main_window.get_facet_filter_text().to_string();
+
+            // Parse facet filters (format: "name=value, name2=value2")
+            let mut facet_map: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+            for facet_str in facet_text.split(',') {
+                if let Some((key, value)) = facet_str.split_once('=') {
+                    facet_map
+                        .entry(key.trim().to_string())
+                        .or_insert_with(Vec::new)
+                        .push(value.trim().to_string());
+                }
+            }
+
+            // Update state filters
+            {
+                let mut state_mut = state.borrow_mut();
+                state_mut.filters.genera = genera.clone();
+                state_mut.filters.facets = facet_map.clone();
+            }
+
+            // Apply filters
+            let state_borrow = state.borrow();
+            if let Some(ref taxonomy) = state_borrow.taxonomy {
+                if let Some(ref items) = taxonomy.example_items {
+                    let filtered_items: Vec<_> = items
+                        .iter()
+                        .filter(|item| matches_filters(item, &state_borrow.filters))
+                        .cloned()
+                        .collect();
+
+                    // Update UI with filtered items
+                    let items_model = Rc::new(VecModel::from(
+                        filtered_items.iter().map(|item| {
+                            StandardListViewItem::from(SharedString::from(&item.name))
+                        }).collect::<Vec<_>>()
+                    ));
+                    main_window.set_items_list(items_model.into());
+
+                    // Update active filters text
+                    let mut filter_parts = Vec::new();
+                    if !genera.is_empty() {
+                        filter_parts.push(format!("Genus: {}", genera.join(" OR ")));
+                    }
+                    for (facet_name, values) in &facet_map {
+                        filter_parts.push(format!("{}: {}", facet_name, values.join(" OR ")));
+                    }
+                    let filters_text = if filter_parts.is_empty() {
+                        String::new()
+                    } else {
+                        filter_parts.join("; ")
+                    };
+                    main_window.set_active_filters_text(SharedString::from(filters_text));
+
+                    main_window.set_status_message(SharedString::from(
+                        format!("Filters applied: {} items match", filtered_items.len())
+                    ));
+                }
+            }
+        });
+    }
+
+    // Clear Filters
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_clear_filters(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Clear filter inputs
+            main_window.set_genus_filter_text(SharedString::from(""));
+            main_window.set_facet_filter_text(SharedString::from(""));
+            main_window.set_active_filters_text(SharedString::from(""));
+
+            // Clear state filters
+            state.borrow_mut().filters = Filters {
+                genera: Vec::new(),
+                facets: std::collections::HashMap::new(),
+            };
+
+            // Reset UI to show all items
+            update_ui_from_state(&main_window, &state.borrow());
+
+            main_window.set_status_message(SharedString::from("Filters cleared"));
+        });
+    }
+
     main_window.run().unwrap();
 }
 

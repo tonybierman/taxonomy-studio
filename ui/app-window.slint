@@ -16,6 +16,11 @@ export component MainWindow inherits Window {
     in property <string> selected-item-path;
     in property <string> selected-item-facets;
 
+    // Filter properties
+    in-out property <string> genus-filter-text: "";
+    in-out property <string> facet-filter-text: "";
+    in property <string> active-filters-text: "";
+
     // File operation callbacks
     callback file-open();
     callback file-save();
@@ -24,6 +29,13 @@ export component MainWindow inherits Window {
 
     // Item selection callback
     callback item-selected(int);
+
+    // Sort callback
+    callback sort-by-name();
+
+    // Filter callbacks
+    callback apply-filters();
+    callback clear-filters();
 
     min-width: 1000px;
     min-height: 700px;
@@ -155,12 +167,22 @@ export component MainWindow inherits Window {
 
                     HorizontalBox {
                         padding: 6px;
+                        spacing: 8px;
 
                         Text {
                             text: "Items (" + root.items-list.length + ")";
                             font-weight: 700;
                             vertical-alignment: center;
                             color: #000;
+                        }
+
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+
+                        Button {
+                            text: "Sort by Name";
+                            clicked => { root.sort-by-name(); }
                         }
                     }
                 }
@@ -308,9 +330,9 @@ export component MainWindow inherits Window {
             }
         }
 
-        // Bottom panel - Facet Filters (collapsible placeholder)
+        // Bottom panel - Facet Filters
         Rectangle {
-            height: 100px;
+            height: 150px;
             background: #f5f5f5;
             border-width: 1px;
             border-color: #ddd;
@@ -323,12 +345,27 @@ export component MainWindow inherits Window {
 
                     HorizontalBox {
                         padding: 6px;
+                        spacing: 8px;
 
                         Text {
-                            text: "Facet Filters";
+                            text: "Filters";
                             font-weight: 700;
                             vertical-alignment: center;
                             color: #000;
+                        }
+
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+
+                        Button {
+                            text: "Apply Filters";
+                            clicked => { root.apply-filters(); }
+                        }
+
+                        Button {
+                            text: "Clear Filters";
+                            clicked => { root.clear-filters(); }
                         }
                     }
                 }
@@ -337,16 +374,77 @@ export component MainWindow inherits Window {
                 ScrollView {
                     VerticalBox {
                         padding: 12px;
+                        spacing: 12px;
 
-                        if root.facet-dimensions-text != "" : Text {
-                            text: root.facet-dimensions-text;
-                            color: #ccc;
-                            wrap: word-wrap;
+                        // Genus filter
+                        if root.taxonomy-description != "" : VerticalBox {
+                            spacing: 4px;
+
+                            Text {
+                                text: "Filter by Genus (comma-separated):";
+                                font-size: 11px;
+                                font-weight: 600;
+                                color: #333;
+                            }
+
+                            LineEdit {
+                                text <=> root.genus-filter-text;
+                                placeholder-text: "e.g., Coffee, Tea";
+                            }
                         }
 
-                        if root.facet-dimensions-text == "" : Text {
-                            text: "Facet filtering will be implemented in Phase 5";
-                            color: #999;
+                        // Facet filter
+                        if root.taxonomy-description != "" : VerticalBox {
+                            spacing: 4px;
+
+                            Text {
+                                text: "Filter by Facets (comma-separated, format: name=value):";
+                                font-size: 11px;
+                                font-weight: 600;
+                                color: #333;
+                            }
+
+                            LineEdit {
+                                text <=> root.facet-filter-text;
+                                placeholder-text: "e.g., temperature=hot, caffeine_content=high";
+                            }
+                        }
+
+                        // Active filters display
+                        if root.active-filters-text != "" : VerticalBox {
+                            spacing: 4px;
+
+                            Text {
+                                text: "Active Filters:";
+                                font-size: 11px;
+                                font-weight: 600;
+                                color: #333;
+                            }
+
+                            Text {
+                                text: root.active-filters-text;
+                                color: #666;
+                                wrap: word-wrap;
+                            }
+                        }
+
+                        // Available facets info
+                        if root.facet-dimensions-text != "" : VerticalBox {
+                            spacing: 4px;
+
+                            Text {
+                                text: "Available Facets:";
+                                font-size: 11px;
+                                font-weight: 600;
+                                color: #333;
+                            }
+
+                            Text {
+                                text: root.facet-dimensions-text;
+                                color: #999;
+                                font-size: 10px;
+                                wrap: word-wrap;
+                            }
                         }
                     }
                 }
