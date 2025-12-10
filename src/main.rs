@@ -422,6 +422,157 @@ pub fn main() {
         });
     }
 
+    // Start Edit
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_start_edit(move || {
+            let main_window = main_window_weak.unwrap();
+            let state_borrow = state.borrow();
+
+            // Get the currently selected item
+            if let Some(ref taxonomy) = state_borrow.taxonomy {
+                if let Some(ref items) = taxonomy.example_items {
+                    let selected_idx = main_window.get_selected_item_index();
+                    if selected_idx >= 0 && (selected_idx as usize) < items.len() {
+                        let item = &items[selected_idx as usize];
+
+                        // Populate edit fields
+                        main_window.set_edit_item_name(SharedString::from(&item.name));
+                        main_window.set_edit_item_path(SharedString::from(
+                            item.classical_path.join(", ")
+                        ));
+
+                        // Format facets for editing (key=value, comma-separated)
+                        let facets_edit = format_facets_for_edit(&item.facets);
+                        main_window.set_edit_item_facets(SharedString::from(facets_edit));
+
+                        // Enter edit mode
+                        main_window.set_is_editing(true);
+                        main_window.set_validation_error(SharedString::from(""));
+                        main_window.set_status_message(SharedString::from("Editing item..."));
+                    }
+                }
+            }
+        });
+    }
+
+    // Save Edit
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_save_edit(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Get edited values
+            let new_name = main_window.get_edit_item_name().to_string();
+            let new_path = main_window.get_edit_item_path().to_string();
+            let new_facets = main_window.get_edit_item_facets().to_string();
+
+            // Validate inputs
+            if new_name.trim().is_empty() {
+                main_window.set_validation_error(SharedString::from("Name cannot be empty"));
+                return;
+            }
+
+            // Parse classification path (comma-separated)
+            let classical_path: Vec<String> = new_path
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+
+            if classical_path.is_empty() {
+                main_window.set_validation_error(SharedString::from("Classification path cannot be empty"));
+                return;
+            }
+
+            // Parse facets (key=value pairs)
+            let mut facets_map: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
+            for facet_str in new_facets.split(',') {
+                if facet_str.trim().is_empty() {
+                    continue;
+                }
+                if let Some((key, value)) = facet_str.split_once('=') {
+                    facets_map.insert(
+                        key.trim().to_string(),
+                        serde_json::Value::String(value.trim().to_string())
+                    );
+                } else {
+                    main_window.set_validation_error(SharedString::from(
+                        format!("Invalid facet format: '{}'. Use key=value", facet_str)
+                    ));
+                    return;
+                }
+            }
+
+            // Update the item in the taxonomy
+            let mut state_mut = state.borrow_mut();
+            if let Some(ref mut taxonomy) = state_mut.taxonomy {
+                if let Some(ref mut items) = taxonomy.example_items {
+                    let selected_idx = main_window.get_selected_item_index();
+                    if selected_idx >= 0 && (selected_idx as usize) < items.len() {
+                        let item = &mut items[selected_idx as usize];
+                        item.name = new_name.clone();
+                        item.classical_path = classical_path;
+                        item.facets = facets_map;
+
+                        // Mark as dirty
+                        state_mut.mark_dirty();
+
+                        // Exit edit mode
+                        drop(state_mut);
+                        main_window.set_is_editing(false);
+
+                        // Update window title
+                        let title = state.borrow().get_window_title();
+                        main_window.set_window_title(SharedString::from(title));
+
+                        // Refresh the UI
+                        update_ui_from_state(&main_window, &state.borrow());
+
+                        // Re-select the edited item
+                        main_window.set_selected_item_index(selected_idx);
+
+                        // Trigger item selection to update details panel
+                        let state_borrow = state.borrow();
+                        if let Some(ref taxonomy) = state_borrow.taxonomy {
+                            if let Some(ref items) = taxonomy.example_items {
+                                if selected_idx >= 0 && (selected_idx as usize) < items.len() {
+                                    let item = &items[selected_idx as usize];
+                                    main_window.set_selected_item_name(SharedString::from(&item.name));
+                                    main_window.set_selected_item_path(SharedString::from(
+                                        item.classical_path.join(" → ")
+                                    ));
+                                    let facets_text = format_facets(&item.facets);
+                                    main_window.set_selected_item_facets(SharedString::from(facets_text));
+                                }
+                            }
+                        }
+
+                        main_window.set_status_message(SharedString::from("Item saved successfully"));
+                    }
+                }
+            }
+        });
+    }
+
+    // Cancel Edit
+    {
+        let main_window_weak = main_window.as_weak();
+
+        main_window.on_cancel_edit(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Exit edit mode without saving
+            main_window.set_is_editing(false);
+            main_window.set_validation_error(SharedString::from(""));
+            main_window.set_status_message(SharedString::from("Edit cancelled"));
+        });
+    }
+
     main_window.run().unwrap();
 }
 
@@ -512,4 +663,27 @@ fn format_facet_dimensions(dimensions: &std::collections::HashMap<String, Vec<St
 
     dim_lines.sort();
     dim_lines.join(" • ")
+}
+
+/// Format facets for editing (key=value, comma-separated)
+fn format_facets_for_edit(facets: &std::collections::HashMap<String, serde_json::Value>) -> String {
+    let mut facet_pairs: Vec<String> = facets
+        .iter()
+        .map(|(key, value)| {
+            let value_str = match value {
+                serde_json::Value::String(s) => s.clone(),
+                serde_json::Value::Array(arr) => {
+                    arr.iter()
+                        .filter_map(|v| v.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                }
+                _ => value.to_string(),
+            };
+            format!("{}={}", key, value_str)
+        })
+        .collect();
+
+    facet_pairs.sort();
+    facet_pairs.join(", ")
 }

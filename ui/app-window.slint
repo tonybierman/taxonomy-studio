@@ -21,6 +21,13 @@ export component MainWindow inherits Window {
     in-out property <string> facet-filter-text: "";
     in property <string> active-filters-text: "";
 
+    // Edit mode properties
+    in-out property <bool> is-editing: false;
+    in-out property <string> edit-item-name: "";
+    in-out property <string> edit-item-path: "";
+    in-out property <string> edit-item-facets: "";
+    in property <string> validation-error: "";
+
     // File operation callbacks
     callback file-open();
     callback file-save();
@@ -36,6 +43,11 @@ export component MainWindow inherits Window {
     // Filter callbacks
     callback apply-filters();
     callback clear-filters();
+
+    // Edit callbacks
+    callback start-edit();
+    callback save-edit();
+    callback cancel-edit();
 
     min-width: 1000px;
     min-height: 700px;
@@ -226,12 +238,32 @@ export component MainWindow inherits Window {
 
                     HorizontalBox {
                         padding: 6px;
+                        spacing: 8px;
 
                         Text {
                             text: "Details";
                             font-weight: 700;
                             vertical-alignment: center;
                             color: #000;
+                        }
+
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+
+                        if root.selected-item-name != "" && !root.is-editing : Button {
+                            text: "Edit";
+                            clicked => { root.start-edit(); }
+                        }
+
+                        if root.is-editing : Button {
+                            text: "Save";
+                            clicked => { root.save-edit(); }
+                        }
+
+                        if root.is-editing : Button {
+                            text: "Cancel";
+                            clicked => { root.cancel-edit(); }
                         }
                     }
                 }
@@ -242,10 +274,10 @@ export component MainWindow inherits Window {
                         padding: 12px;
                         spacing: 8px;
 
-                        if root.selected-item-name != "" : VerticalBox {
+                        if root.selected-item-name != "" && !root.is-editing : VerticalBox {
                             spacing: 12px;
 
-                            // Item name
+                            // Item name (read-only)
                             VerticalBox {
                                 spacing: 4px;
 
@@ -263,7 +295,7 @@ export component MainWindow inherits Window {
                                 }
                             }
 
-                            // Item path
+                            // Item path (read-only)
                             if root.selected-item-path != "" : VerticalBox {
                                 spacing: 4px;
 
@@ -285,7 +317,7 @@ export component MainWindow inherits Window {
                                 background: #ddd;
                             }
 
-                            // Facets
+                            // Facets (read-only)
                             if root.selected-item-facets != "" : VerticalBox {
                                 spacing: 4px;
 
@@ -301,6 +333,79 @@ export component MainWindow inherits Window {
                                     color: #000;
                                 }
                             }
+                        }
+
+                        if root.is-editing : VerticalBox {
+                            spacing: 12px;
+
+                            // Validation error
+                            if root.validation-error != "" : VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: root.validation-error;
+                                    color: #d00;
+                                    font-weight: 700;
+                                    wrap: word-wrap;
+                                }
+
+                                Rectangle {
+                                    height: 1px;
+                                    background: #ddd;
+                                }
+                            }
+
+                            // Item name (editable)
+                            VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: "Name:";
+                                    font-size: 10px;
+                                    color: #666;
+                                }
+
+                                LineEdit {
+                                    text <=> root.edit-item-name;
+                                }
+                            }
+
+                            // Item path (editable - comma-separated)
+                            VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: "Classification Path (comma-separated):";
+                                    font-size: 10px;
+                                    color: #666;
+                                }
+
+                                LineEdit {
+                                    text <=> root.edit-item-path;
+                                    placeholder-text: "e.g., Beverages, Hot Beverages, Coffee";
+                                }
+                            }
+
+                            Rectangle {
+                                height: 1px;
+                                background: #ddd;
+                            }
+
+                            // Facets (editable - one per line or comma-separated)
+                            VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: "Facets (format: key=value, comma-separated):";
+                                    font-size: 10px;
+                                    color: #666;
+                                }
+
+                                LineEdit {
+                                    text <=> root.edit-item-facets;
+                                    placeholder-text: "e.g., temperature=hot, caffeine_content=high";
+                                }
+                            }
 
                             Rectangle {
                                 height: 1px;
@@ -308,7 +413,7 @@ export component MainWindow inherits Window {
                             }
 
                             Text {
-                                text: "Full editing will be implemented in Phase 6";
+                                text: "Note: Changes require validation before saving";
                                 font-size: 11px;
                                 color: #999;
                                 wrap: word-wrap;
