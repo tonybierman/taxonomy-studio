@@ -1,9 +1,13 @@
+mod errors;
+
 use clap::Parser;
 use slint::{ComponentHandle, Model, SharedString, StandardListViewItem, VecModel};
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 use taxstud_core::*;
+
+use errors::{map_file_load_error, map_file_save_error, map_revert_error};
 
 slint::slint!(export { MainWindow } from "ui/app-window.slint";);
 
@@ -335,19 +339,9 @@ pub fn main() {
                                 set_status(&main_window, "File loaded successfully", StatusLevel::Success);
                             }
                             Err(e) => {
-                                // Show enhanced error dialog
-                                let error_string = e.to_string();
-                                let (message, details) = if error_string.contains("Validation failed") {
-                                    ("The taxonomy file has validation errors.", error_string)
-                                } else if error_string.contains("No such file") {
-                                    ("The file could not be found.", format!("Path: {}\n\nPlease verify the file exists and you have permission to read it.", path.display()))
-                                } else if error_string.contains("Permission denied") {
-                                    ("Permission denied.", format!("You don't have permission to read this file:\n{}", path.display()))
-                                } else {
-                                    ("Failed to load taxonomy file.", error_string)
-                                };
-
-                                show_error(&main_window, "Error Loading File", message, details);
+                                // Show enhanced error dialog using error mapper
+                                let (title, message, details) = map_file_load_error(&*e, &path);
+                                show_error(&main_window, title, message, details);
                             }
                         }
                     }
@@ -373,19 +367,9 @@ pub fn main() {
                     set_status(&main_window, "File saved successfully", StatusLevel::Success);
                 }
                 Err(e) => {
-                    // Show enhanced error dialog
-                    let error_string = e.to_string();
-                    let (message, details) = if error_string.contains("No file path set") {
-                        ("No file path is set for this taxonomy.", "Please use 'Save As...' to choose a location for this file.".to_string())
-                    } else if error_string.contains("Permission denied") {
-                        ("Permission denied.", "You don't have permission to write to this file.".to_string())
-                    } else if error_string.contains("No space left") {
-                        ("Disk full.", "There is no space left on the device to save the file.".to_string())
-                    } else {
-                        ("Failed to save taxonomy file.", error_string)
-                    };
-
-                    show_error(&main_window, "Error Saving File", message, details);
+                    // Show enhanced error dialog using error mapper
+                    let (title, message, details) = map_file_save_error(&*e, None);
+                    show_error(&main_window, title, message, details);
                 }
             }
         });
@@ -418,17 +402,9 @@ pub fn main() {
                             set_status(&main_window, "File saved successfully", StatusLevel::Success);
                         }
                         Err(e) => {
-                            // Show enhanced error dialog
-                            let error_string = e.to_string();
-                            let (message, details) = if error_string.contains("Permission denied") {
-                                ("Permission denied.", format!("You don't have permission to write to:\n{}", path.display()))
-                            } else if error_string.contains("No space left") {
-                                ("Disk full.", "There is no space left on the device to save the file.".to_string())
-                            } else {
-                                ("Failed to save taxonomy file.", error_string)
-                            };
-
-                            show_error(&main_window, "Error Saving File", message, details);
+                            // Show enhanced error dialog using error mapper
+                            let (title, message, details) = map_file_save_error(&*e, Some(&path));
+                            show_error(&main_window, title, message, details);
                         }
                     }
                 }
@@ -1064,17 +1040,8 @@ pub fn main() {
                                                 set_status(&main_window, "File loaded successfully", StatusLevel::Success);
                                             }
                                             Err(e) => {
-                                                let error_string = e.to_string();
-                                                let (message, details) = if error_string.contains("Validation failed") {
-                                                    ("The taxonomy file has validation errors.", error_string)
-                                                } else if error_string.contains("No such file") {
-                                                    ("The file could not be found.", format!("Path: {}\n\nPlease verify the file exists and you have permission to read it.", path.display()))
-                                                } else if error_string.contains("Permission denied") {
-                                                    ("Permission denied.", format!("You don't have permission to read this file:\n{}", path.display()))
-                                                } else {
-                                                    ("Failed to load taxonomy file.", error_string)
-                                                };
-                                                show_error(&main_window, "Error Loading File", message, details);
+                                                let (title, message, details) = map_file_load_error(&*e, &path);
+                                                show_error(&main_window, title, message, details);
                                             }
                                         }
                                     }
@@ -1095,14 +1062,9 @@ pub fn main() {
                     // Hide confirmation dialog
                     hide_confirmation(&main_window);
 
-                    // Show error
-                    let error_string = e.to_string();
-                    let (message, details) = if error_string.contains("No file path set") {
-                        ("No file path is set for this taxonomy.", "Please use 'Save As...' to choose a location for this file.".to_string())
-                    } else {
-                        ("Failed to save taxonomy file.", error_string)
-                    };
-                    show_error(&main_window, "Error Saving File", message, details);
+                    // Show error using error mapper
+                    let (title, message, details) = map_file_save_error(&*e, None);
+                    show_error(&main_window, title, message, details);
 
                     // Clear pending action since we couldn't save
                     state.borrow_mut().pending_action = None;
@@ -1146,17 +1108,8 @@ pub fn main() {
                                         set_status(&main_window, "File loaded successfully", StatusLevel::Success);
                                     }
                                     Err(e) => {
-                                        let error_string = e.to_string();
-                                        let (message, details) = if error_string.contains("Validation failed") {
-                                            ("The taxonomy file has validation errors.", error_string)
-                                        } else if error_string.contains("No such file") {
-                                            ("The file could not be found.", format!("Path: {}\n\nPlease verify the file exists and you have permission to read it.", path.display()))
-                                        } else if error_string.contains("Permission denied") {
-                                            ("Permission denied.", format!("You don't have permission to read this file:\n{}", path.display()))
-                                        } else {
-                                            ("Failed to load taxonomy file.", error_string)
-                                        };
-                                        show_error(&main_window, "Error Loading File", message, details);
+                                        let (title, message, details) = map_file_load_error(&*e, &path);
+                                        show_error(&main_window, title, message, details);
                                     }
                                 }
                             }
@@ -1242,19 +1195,9 @@ pub fn main() {
                                     set_status(&main_window, "Reverted to saved version", StatusLevel::Success);
                                 }
                                 Err(e) => {
-                                    // Show error
-                                    let error_string = e.to_string();
-                                    let (message, details) = if error_string.contains("Validation failed") {
-                                        ("The taxonomy file has validation errors.", error_string)
-                                    } else if error_string.contains("No such file") {
-                                        ("The file could not be found.", format!("Path: {}\n\nThe file may have been moved or deleted.", file_path.display()))
-                                    } else if error_string.contains("Permission denied") {
-                                        ("Permission denied.", format!("You don't have permission to read this file:\n{}", file_path.display()))
-                                    } else {
-                                        ("Failed to reload taxonomy file.", error_string)
-                                    };
-
-                                    show_error(&main_window, "Error Reverting File", message, details);
+                                    // Show error using error mapper
+                                    let (title, message, details) = map_revert_error(&*e, &file_path);
+                                    show_error(&main_window, title, message, details);
                                 }
                             }
                         }
