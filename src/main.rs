@@ -2,7 +2,7 @@ use slint::{ComponentHandle, Model, SharedString, StandardListViewItem, VecModel
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
-use taxman_core::*;
+use taxstud_core::*;
 
 slint::slint!(export { MainWindow } from "ui/app-window.slint";);
 
@@ -300,7 +300,7 @@ pub fn main() {
                     // Clone items for sorting (don't modify the taxonomy)
                     let mut sorted_items = items.clone();
 
-                    // Sort by name using taxman-core
+                    // Sort by name using taxstud-core
                     sort_items(&mut sorted_items, "name");
 
                     // Update UI with sorted items

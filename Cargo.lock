@@ -4540,7 +4540,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "taxman"
+name = "taxstud"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -4552,12 +4552,12 @@ dependencies = [
  "serde_json",
  "slint",
  "slint-build",
- "taxman-core",
+ "taxstud-core",
  "unicode-normalization",
 ]
 
 [[package]]
-name = "taxman-core"
+name = "taxstud-core"
 version = "0.1.0"
 dependencies = [
  "regex",

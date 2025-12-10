@@ -1,9 +1,9 @@
-# Taxman - Next Steps and Future Enhancements
+# TaxStud - Next Steps and Future Enhancements
 
 ## Project Status
 
 **Completed Phases:**
-- ✅ Phase 1: Shared Library Creation (taxman-core)
+- ✅ Phase 1: Shared Library Creation (taxstud-core)
 - ✅ Phase 2: GUI Foundation (file operations, state management)
 - ✅ Phase 3: UI Layout Redesign (3-panel layout)
 - ✅ Phase 4: Read-Only Display (hierarchy, items, facets)
@@ -61,7 +61,7 @@
 4. Clear invalid/missing files automatically
 
 **Technical Notes:**
-- Store in `~/.config/taxman/recent.json` or similar
+- Store in `~/.config/taxstud/recent.json` or similar
 - Use `directories` crate for cross-platform config paths
 - Consider using `serde` for serialization
 
@@ -106,7 +106,7 @@
 
 **Implementation:**
 1. Auto-save to temporary file every N minutes (if dirty)
-2. Store in `~/.cache/taxman/autosave/`
+2. Store in `~/.cache/taxstud/autosave/`
 3. On startup, check for autosave files
 4. Prompt: "Found unsaved changes from [timestamp]. Restore?"
 
@@ -133,9 +133,9 @@
 4. Offer to upgrade old files to current schema
 
 **Files to Modify:**
-- `taxman-core/src/models.rs` - Add schema_version field
-- `taxman-core/src/io.rs` - Add migration logic
-- `taxman-core/src/validation.rs` - Validate schema version
+- `taxstud-core/src/models.rs` - Add schema_version field
+- `taxstud-core/src/io.rs` - Add migration logic
+- `taxstud-core/src/validation.rs` - Validate schema version
 
 **Estimated Effort:** High (6-8 hours)
 
@@ -375,7 +375,7 @@ struct UndoRedoManager {
 **Files to Modify:**
 - `ui/app-window.slint` - Add UI for hierarchy/facet editing
 - `src/main.rs` - Add edit handlers for all elements
-- `taxman-core/src/validation.rs` - Validate hierarchy changes
+- `taxstud-core/src/validation.rs` - Validate hierarchy changes
 
 ---
 
@@ -405,7 +405,7 @@ struct UndoRedoManager {
 **Files to Modify:**
 - `ui/app-window.slint` - Add search UI
 - `src/main.rs` - Implement search logic
-- Consider adding to `taxman-core/src/filtering.rs`
+- Consider adding to `taxstud-core/src/filtering.rs`
 
 ---
 
@@ -440,7 +440,7 @@ struct UndoRedoManager {
 - Use `rust_xlsxwriter` crate
 
 **Files to Modify:**
-- `taxman-core/src/io.rs` - Add format-specific functions
+- `taxstud-core/src/io.rs` - Add format-specific functions
 - `src/main.rs` - Add export menu/options
 - `ui/app-window.slint` - Add format selection UI
 
@@ -486,7 +486,7 @@ struct UndoRedoManager {
 
 **Implementation:**
 1. Add "Validate" button/menu item
-2. Run full validation check (already exists in taxman-core)
+2. Run full validation check (already exists in taxstud-core)
 3. Display results in a report view:
    - ✅ Passed checks
    - ⚠️ Warnings (non-critical issues)
@@ -496,7 +496,7 @@ struct UndoRedoManager {
 **Files to Modify:**
 - `ui/app-window.slint` - Add validation report overlay
 - `src/main.rs` - Generate and display validation report
-- `taxman-core/src/validation.rs` - Enhanced validation with warnings
+- `taxstud-core/src/validation.rs` - Enhanced validation with warnings
 
 ---
 
@@ -518,7 +518,7 @@ struct UndoRedoManager {
 4. Export diff report
 
 **Files to Modify:**
-- `taxman-core/src/` - Add new `diff.rs` module
+- `taxstud-core/src/` - Add new `diff.rs` module
 - `ui/app-window.slint` - Add diff UI
 - `src/main.rs` - Diff logic and display
 
@@ -572,7 +572,7 @@ struct UndoRedoManager {
      - Iced Coffee
      - ...
    ```
-4. Use existing `taxman-core::group_items_by_facet()` logic
+4. Use existing `taxstud-core::group_items_by_facet()` logic
 
 **Files to Modify:**
 - `ui/app-window.slint` - Add group view UI
@@ -636,7 +636,7 @@ struct UndoRedoManager {
 
 ### Before Starting a Feature
 1. Review existing code and understand architecture
-2. Check if taxman-core needs changes or just GUI
+2. Check if taxstud-core needs changes or just GUI
 3. Plan UI changes first (sketch or mockup)
 4. Consider backward compatibility
 
@@ -673,8 +673,8 @@ struct UndoRedoManager {
 - `serde_yaml` - YAML support
 
 ### Related Projects
-- Review CLI implementation (`examples/taxman_cli.rs`) for feature inspiration
-- Check taxman-core tests for validation examples
+- Review CLI implementation (`examples/taxstud_cli.rs`) for feature inspiration
+- Check taxstud-core tests for validation examples
 
 ---
 
@@ -712,7 +712,7 @@ struct UndoRedoManager {
 
 ## Conclusion
 
-The Taxman application has a solid foundation with complete CRUD functionality for items, filtering, sorting, and file management. The next phases will focus on:
+The TaxStud application has a solid foundation with complete CRUD functionality for items, filtering, sorting, and file management. The next phases will focus on:
 
 1. **User Protection:** Preventing data loss through warnings and confirmations
 2. **Usability:** Keyboard shortcuts, better feedback, help system

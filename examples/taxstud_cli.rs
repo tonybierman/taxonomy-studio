@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::collections::HashMap;
 use std::process;
-use taxman_core::*;
+use taxstud_core::*;
 
 /// Hybrid Taxonomy Browser - Filter and display items using faceted search
 ///

@@ -1,10 +1,10 @@
-# Taxman - Hybrid Taxonomy Management System
+# TaxStud - Hybrid Taxonomy Management System
 
 A desktop GUI application for managing hybrid taxonomies that combine classical hierarchical classification with modern faceted search. Built with Rust and [Slint](https://slint.rs/).
 
 ## Overview
 
-Taxman provides an intuitive interface for creating, editing, and exploring taxonomies that use both:
+TaxStud provides an intuitive interface for creating, editing, and exploring taxonomies that use both:
 - **Classical Hierarchy:** Traditional genus-species-differentia tree structure
 - **Faceted Classification:** Multi-dimensional tagging for flexible categorization
 
@@ -30,8 +30,8 @@ Perfect for organizing complex collections like beverages, books, products, or a
 - **Status Bar:** Real-time operation feedback
 
 ### Architecture
-- **Shared Library (`taxman-core`):** Business logic shared between GUI and CLI
-- **CLI Tool:** Command-line interface for power users (see `examples/taxman_cli.rs`)
+- **Shared Library (`taxstud-core`):** Business logic shared between GUI and CLI
+- **CLI Tool:** Command-line interface for power users (see `examples/taxstud_cli.rs`)
 - **Clean Separation:** UI logic in Slint, business logic in Rust
 
 ## Installation
@@ -43,7 +43,7 @@ Perfect for organizing complex collections like beverages, books, products, or a
 ### Build from Source
 ```bash
 git clone <repository-url>
-cd taxman
+cd taxstud
 cargo build --release
 ```
 
@@ -53,7 +53,7 @@ cargo build --release
 cargo run --release
 
 # CLI tool
-cargo run --release --example taxman_cli -- <taxonomy-file.json>
+cargo run --release --example taxstud_cli -- <taxonomy-file.json>
 ```
 
 ## Quick Start
@@ -104,25 +104,25 @@ cargo run --release --example taxman_cli -- <taxonomy-file.json>
 
 ```bash
 # View entire taxonomy
-cargo run --example taxman_cli -- assets/beverages.json
+cargo run --example taxstud_cli -- assets/beverages.json
 
 # Filter by genus
-cargo run --example taxman_cli -- assets/beverages.json --genus Coffee
+cargo run --example taxstud_cli -- assets/beverages.json --genus Coffee
 
 # Filter by facets
-cargo run --example taxman_cli -- assets/beverages.json --facet temperature=hot
+cargo run --example taxstud_cli -- assets/beverages.json --facet temperature=hot
 
 # Combine filters (AND logic between types)
-cargo run --example taxman_cli -- assets/beverages.json --genus Coffee --facet caffeine_content=high
+cargo run --example taxstud_cli -- assets/beverages.json --genus Coffee --facet caffeine_content=high
 
 # Sort by name
-cargo run --example taxman_cli -- assets/beverages.json --sort name
+cargo run --example taxstud_cli -- assets/beverages.json --sort name
 
 # Group by facet
-cargo run --example taxman_cli -- assets/beverages.json --group-by temperature
+cargo run --example taxstud_cli -- assets/beverages.json --group-by temperature
 
 # Combine all features
-cargo run --example taxman_cli -- assets/beverages.json \
+cargo run --example taxstud_cli -- assets/beverages.json \
   --genus Coffee \
   --facet temperature=hot \
   --sort name \
@@ -169,13 +169,13 @@ Taxonomies are stored as JSON files with this structure:
 ## Project Structure
 
 ```
-taxman/
+taxstud/
 ├── Cargo.toml              # Workspace configuration
 ├── src/
 │   └── main.rs            # GUI application
 ├── ui/
 │   └── app-window.slint   # Main UI layout
-├── taxman-core/           # Shared library
+├── taxstud-core/           # Shared library
 │   ├── Cargo.toml
 │   └── src/
 │       ├── lib.rs         # Public API
@@ -186,7 +186,7 @@ taxman/
 │       ├── grouping.rs    # Grouping operations
 │       └── io.rs          # File I/O
 ├── examples/
-│   └── taxman_cli.rs      # CLI tool
+│   └── taxstud_cli.rs      # CLI tool
 ├── assets/                # Sample taxonomy files
 │   ├── beverages.json
 │   ├── books.json
@@ -202,7 +202,7 @@ taxman/
 cargo test
 
 # Run tests for core library only
-cargo test -p taxman-core
+cargo test -p taxstud-core
 ```
 
 ### Code Style
