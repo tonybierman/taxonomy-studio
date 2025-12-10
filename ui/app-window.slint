@@ -28,6 +28,12 @@ export component MainWindow inherits Window {
     in-out property <string> edit-item-facets: "";
     in property <string> validation-error: "";
 
+    // Create mode properties
+    in-out property <bool> is-creating: false;
+    in-out property <string> new-item-name: "";
+    in-out property <string> new-item-path: "";
+    in-out property <string> new-item-facets: "";
+
     // File operation callbacks
     callback file-open();
     callback file-save();
@@ -48,6 +54,12 @@ export component MainWindow inherits Window {
     callback start-edit();
     callback save-edit();
     callback cancel-edit();
+
+    // Create/Delete callbacks
+    callback start-create-item();
+    callback save-new-item();
+    callback cancel-create-item();
+    callback delete-item();
 
     min-width: 1000px;
     min-height: 700px;
@@ -192,6 +204,11 @@ export component MainWindow inherits Window {
                             horizontal-stretch: 1;
                         }
 
+                        if root.taxonomy-description != "" : Button {
+                            text: "New Item";
+                            clicked => { root.start-create-item(); }
+                        }
+
                         Button {
                             text: "Sort by Name";
                             clicked => { root.sort-by-name(); }
@@ -251,9 +268,14 @@ export component MainWindow inherits Window {
                             horizontal-stretch: 1;
                         }
 
-                        if root.selected-item-name != "" && !root.is-editing : Button {
+                        if root.selected-item-name != "" && !root.is-editing && !root.is-creating : Button {
                             text: "Edit";
                             clicked => { root.start-edit(); }
+                        }
+
+                        if root.selected-item-name != "" && !root.is-editing && !root.is-creating : Button {
+                            text: "Delete";
+                            clicked => { root.delete-item(); }
                         }
 
                         if root.is-editing : Button {
@@ -264,6 +286,16 @@ export component MainWindow inherits Window {
                         if root.is-editing : Button {
                             text: "Cancel";
                             clicked => { root.cancel-edit(); }
+                        }
+
+                        if root.is-creating : Button {
+                            text: "Create";
+                            clicked => { root.save-new-item(); }
+                        }
+
+                        if root.is-creating : Button {
+                            text: "Cancel";
+                            clicked => { root.cancel-create-item(); }
                         }
                     }
                 }
@@ -420,7 +452,93 @@ export component MainWindow inherits Window {
                             }
                         }
 
-                        if root.selected-item-name == "" && root.taxonomy-description != "" : Text {
+                        if root.is-creating : VerticalBox {
+                            spacing: 12px;
+
+                            // Validation error
+                            if root.validation-error != "" : VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: root.validation-error;
+                                    color: #d00;
+                                    font-weight: 700;
+                                    wrap: word-wrap;
+                                }
+
+                                Rectangle {
+                                    height: 1px;
+                                    background: #ddd;
+                                }
+                            }
+
+                            Text {
+                                text: "Create New Item";
+                                font-weight: 700;
+                                font-size: 14px;
+                                color: #000;
+                            }
+
+                            Rectangle {
+                                height: 1px;
+                                background: #ddd;
+                            }
+
+                            // Item name
+                            VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: "Name:";
+                                    font-size: 10px;
+                                    color: #666;
+                                }
+
+                                LineEdit {
+                                    text <=> root.new-item-name;
+                                    placeholder-text: "Enter item name";
+                                }
+                            }
+
+                            // Item path
+                            VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: "Classification Path (comma-separated):";
+                                    font-size: 10px;
+                                    color: #666;
+                                }
+
+                                LineEdit {
+                                    text <=> root.new-item-path;
+                                    placeholder-text: "e.g., Beverages, Hot Beverages, Coffee";
+                                }
+                            }
+
+                            Rectangle {
+                                height: 1px;
+                                background: #ddd;
+                            }
+
+                            // Facets
+                            VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: "Facets (format: key=value, comma-separated):";
+                                    font-size: 10px;
+                                    color: #666;
+                                }
+
+                                LineEdit {
+                                    text <=> root.new-item-facets;
+                                    placeholder-text: "e.g., temperature=hot, caffeine_content=high";
+                                }
+                            }
+                        }
+
+                        if root.selected-item-name == "" && root.taxonomy-description != "" && !root.is-creating : Text {
                             text: "Select an item to view details";
                             color: #999;
                         }

@@ -573,6 +573,188 @@ pub fn main() {
         });
     }
 
+    // Start Create Item
+    {
+        let main_window_weak = main_window.as_weak();
+
+        main_window.on_start_create_item(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Clear form fields
+            main_window.set_new_item_name(SharedString::from(""));
+            main_window.set_new_item_path(SharedString::from(""));
+            main_window.set_new_item_facets(SharedString::from(""));
+            main_window.set_validation_error(SharedString::from(""));
+
+            // Enter create mode
+            main_window.set_is_creating(true);
+            main_window.set_status_message(SharedString::from("Creating new item..."));
+        });
+    }
+
+    // Save New Item
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_save_new_item(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Get form values
+            let new_name = main_window.get_new_item_name().to_string();
+            let new_path = main_window.get_new_item_path().to_string();
+            let new_facets = main_window.get_new_item_facets().to_string();
+
+            // Validate inputs
+            if new_name.trim().is_empty() {
+                main_window.set_validation_error(SharedString::from("Name cannot be empty"));
+                return;
+            }
+
+            // Parse classification path (comma-separated)
+            let classical_path: Vec<String> = new_path
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+
+            if classical_path.is_empty() {
+                main_window.set_validation_error(SharedString::from("Classification path cannot be empty"));
+                return;
+            }
+
+            // Parse facets (key=value pairs)
+            let mut facets_map: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
+            for facet_str in new_facets.split(',') {
+                if facet_str.trim().is_empty() {
+                    continue;
+                }
+                if let Some((key, value)) = facet_str.split_once('=') {
+                    facets_map.insert(
+                        key.trim().to_string(),
+                        serde_json::Value::String(value.trim().to_string())
+                    );
+                } else {
+                    main_window.set_validation_error(SharedString::from(
+                        format!("Invalid facet format: '{}'. Use key=value", facet_str)
+                    ));
+                    return;
+                }
+            }
+
+            // Create new item
+            let new_item = Item {
+                name: new_name.clone(),
+                classical_path,
+                facets: facets_map,
+                extra: std::collections::HashMap::new(),
+            };
+
+            // Add to taxonomy
+            let mut state_mut = state.borrow_mut();
+            if let Some(ref mut taxonomy) = state_mut.taxonomy {
+                if let Some(ref mut items) = taxonomy.example_items {
+                    items.push(new_item);
+                } else {
+                    taxonomy.example_items = Some(vec![new_item]);
+                }
+
+                // Mark as dirty
+                state_mut.mark_dirty();
+
+                // Exit create mode
+                drop(state_mut);
+                main_window.set_is_creating(false);
+
+                // Update window title
+                let title = state.borrow().get_window_title();
+                main_window.set_window_title(SharedString::from(title));
+
+                // Refresh the UI
+                update_ui_from_state(&main_window, &state.borrow());
+
+                main_window.set_status_message(SharedString::from(
+                    format!("Item '{}' created successfully", new_name)
+                ));
+            }
+        });
+    }
+
+    // Cancel Create Item
+    {
+        let main_window_weak = main_window.as_weak();
+
+        main_window.on_cancel_create_item(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Exit create mode without saving
+            main_window.set_is_creating(false);
+            main_window.set_validation_error(SharedString::from(""));
+            main_window.set_status_message(SharedString::from("Create cancelled"));
+        });
+    }
+
+    // Delete Item
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_delete_item(move || {
+            let main_window = main_window_weak.unwrap();
+
+            let selected_idx = main_window.get_selected_item_index();
+            if selected_idx < 0 {
+                return;
+            }
+
+            // Get item name for confirmation message
+            let item_name = {
+                let state_borrow = state.borrow();
+                if let Some(ref taxonomy) = state_borrow.taxonomy {
+                    if let Some(ref items) = taxonomy.example_items {
+                        if (selected_idx as usize) < items.len() {
+                            items[selected_idx as usize].name.clone()
+                        } else {
+                            return;
+                        }
+                    } else {
+                        return;
+                    }
+                } else {
+                    return;
+                }
+            };
+
+            // For now, delete without confirmation (we can add a dialog later)
+            // In a real app, you'd use a confirmation dialog here
+            let mut state_mut = state.borrow_mut();
+            if let Some(ref mut taxonomy) = state_mut.taxonomy {
+                if let Some(ref mut items) = taxonomy.example_items {
+                    if (selected_idx as usize) < items.len() {
+                        items.remove(selected_idx as usize);
+
+                        // Mark as dirty
+                        state_mut.mark_dirty();
+
+                        // Exit and update
+                        drop(state_mut);
+
+                        // Update window title
+                        let title = state.borrow().get_window_title();
+                        main_window.set_window_title(SharedString::from(title));
+
+                        // Refresh the UI
+                        update_ui_from_state(&main_window, &state.borrow());
+
+                        main_window.set_status_message(SharedString::from(
+                            format!("Item '{}' deleted", item_name)
+                        ));
+                    }
+                }
+            }
+        });
+    }
+
     main_window.run().unwrap();
 }
 
