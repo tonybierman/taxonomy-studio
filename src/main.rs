@@ -120,7 +120,7 @@ impl AppState {
 
         let dirty_marker = if self.dirty { "*" } else { "" };
 
-        format!("Taxman - {}{}", file_name, dirty_marker)
+        format!("Taxonomy Studio - {}{}", file_name, dirty_marker)
     }
 }
 
@@ -129,7 +129,7 @@ pub fn main() {
     let state = Rc::new(RefCell::new(AppState::new()));
 
     // Set initial window title
-    main_window.set_window_title(SharedString::from("Taxman - No file loaded"));
+    main_window.set_window_title(SharedString::from("Taxonomy Studio - No file loaded"));
 
     // Item selection handler
     {
@@ -691,6 +691,24 @@ pub fn main() {
             main_window.set_is_creating(false);
             main_window.set_validation_error(SharedString::from(""));
             main_window.set_status_message(SharedString::from("Create cancelled"));
+        });
+    }
+
+    // Theme Toggle
+    {
+        let main_window_weak = main_window.as_weak();
+
+        main_window.on_toggle_theme(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Toggle between light and dark theme
+            let current_theme = main_window.get_theme();
+            let new_theme = if current_theme == Theme::Light {
+                Theme::Dark
+            } else {
+                Theme::Light
+            };
+            main_window.set_theme(new_theme);
         });
     }
 

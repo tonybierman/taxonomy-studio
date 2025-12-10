@@ -1,7 +1,12 @@
 // Taxman - Hybrid Taxonomy Management System
 import { LineEdit, Button, StandardListView, GridBox, HorizontalBox, VerticalBox, ScrollView } from "std-widgets.slint";
 
+enum Theme { light, dark }
+
 export component MainWindow inherits Window {
+    // Theme
+    in-out property <Theme> theme: Theme.dark;
+
     // Window properties
     in property <string> window-title <=> root.title;
     in property <string> status-message;
@@ -61,8 +66,74 @@ export component MainWindow inherits Window {
     callback cancel-create-item();
     callback delete-item();
 
+    // Theme callback
+    callback toggle-theme();
+
+    // Theme colors (will be set by states)
+    property <color> bg-primary: #fafafa;
+    property <color> bg-secondary: #f5f5f5;
+    property <color> bg-header: #e8e8e8;
+    property <color> bg-center: #ffffff;
+    property <color> bg-statusbar: #f0f0f0;
+    property <color> border-color: #ddd;
+    property <color> text-primary: #000;
+    property <color> text-secondary: #666;
+    property <color> text-tertiary: #999;
+    property <color> text-error: #d00;
+
     min-width: 1000px;
     min-height: 700px;
+
+    // Dark theme state
+    states [
+        dark when root.theme == Theme.dark: {
+            bg-primary: #2a2a2a;
+            bg-secondary: #1e1e1e;
+            bg-header: #333333;
+            bg-center: #252525;
+            bg-statusbar: #1a1a1a;
+            border-color: #444;
+            text-primary: #ffffff;
+            text-secondary: #cccccc;
+            text-tertiary: #888888;
+            text-error: #ff6b6b;
+        }
+    ]
+
+    MenuBar {
+        Menu {
+            title: "File";
+
+            MenuItem {
+                title: "New";
+                activated => { root.file-new(); }
+            }
+
+            MenuItem {
+                title: "Open...";
+                activated => { root.file-open(); }
+            }
+
+            MenuItem {
+                title: "Save";
+                activated => { root.file-save(); }
+            }
+
+            MenuItem {
+                title: "Save As...";
+                activated => { root.file-save-as(); }
+            }
+        }
+
+        Menu {
+            title: "View";
+
+            MenuItem {
+                title: root.theme == Theme.light ? "Dark Theme" : "Light Theme";
+                activated => { root.toggle-theme(); }
+            }
+        }
+    }
 
     VerticalBox {
         // Toolbar
@@ -71,35 +142,10 @@ export component MainWindow inherits Window {
             padding: 8px;
             spacing: 8px;
 
-            Button {
-                text: "New";
-                clicked => { root.file-new(); }
-            }
-
-            Button {
-                text: "Open...";
-                clicked => { root.file-open(); }
-            }
-
-            Button {
-                text: "Save";
-                clicked => { root.file-save(); }
-            }
-
-            Button {
-                text: "Save As...";
-                clicked => { root.file-save-as(); }
-            }
-
-            Rectangle {
-                // Spacer
-                horizontal-stretch: 1;
-            }
-
             Text {
                 text: root.taxonomy-description != "" ? root.taxonomy-description : "No taxonomy loaded";
                 vertical-alignment: center;
-                color: #555;
+                color: root.text-secondary;
                 font-size: 12px;
             }
         }
@@ -111,16 +157,16 @@ export component MainWindow inherits Window {
             // Left panel - Hierarchy Tree
             Rectangle {
                 width: 250px;
-                background: #fafafa;
+                background: root.bg-primary;
                 border-width: 1px;
-                border-color: #ddd;
+                border-color: root.border-color;
 
                 VerticalBox {
 
                 // Panel header
                 Rectangle {
                     height: 30px;
-                    background: #e8e8e8;
+                    background: root.bg-header;
 
                     HorizontalBox {
                         padding: 6px;
@@ -129,7 +175,7 @@ export component MainWindow inherits Window {
                             text: "Hierarchy";
                             font-weight: 700;
                             vertical-alignment: center;
-                            color: #000;
+                            color: root.text-primary;
                         }
                     }
                 }
@@ -145,13 +191,13 @@ export component MainWindow inherits Window {
                             Text {
                                 text: "Root:";
                                 font-size: 10px;
-                                color: #666;
+                                color: root.text-secondary;
                             }
 
                             Text {
                                 text: root.hierarchy-root;
                                 font-weight: 700;
-                                color: #000;
+                                color: root.text-primary;
                             }
 
                             Rectangle {
@@ -161,14 +207,14 @@ export component MainWindow inherits Window {
                             Text {
                                 text: "Hierarchy tree will be implemented in Phase 4";
                                 font-size: 11px;
-                                color: #999;
+                                color: root.text-tertiary;
                                 wrap: word-wrap;
                             }
                         }
 
                         if root.hierarchy-root == "" : Text {
                             text: "No taxonomy loaded";
-                            color: #999;
+                            color: root.text-tertiary;
                         }
                     }
                 }
@@ -178,16 +224,16 @@ export component MainWindow inherits Window {
             // Center panel - Items List
             Rectangle {
                 horizontal-stretch: 1;
-                background: #333333;
+                background: root.bg-center;
                 border-width: 1px;
-                border-color: #ddd;
+                border-color: root.border-color;
 
                 VerticalBox {
 
                 // Panel header
                 Rectangle {
                     height: 30px;
-                    background: #e8e8e8;
+                    background: root.bg-header;
 
                     HorizontalBox {
                         padding: 6px;
@@ -197,7 +243,7 @@ export component MainWindow inherits Window {
                             text: "Items (" + root.items-list.length + ")";
                             font-weight: 700;
                             vertical-alignment: center;
-                            color: #000;
+                            color: root.text-primary;
                         }
 
                         Rectangle {
@@ -231,7 +277,7 @@ export component MainWindow inherits Window {
 
                         Text {
                             text: root.taxonomy-description != "" ? "No items in taxonomy" : "No taxonomy loaded";
-                            color: #999;
+                            color: root.text-tertiary;
                             horizontal-alignment: center;
                         }
                     }
@@ -242,16 +288,16 @@ export component MainWindow inherits Window {
             // Right panel - Details/Edit
             Rectangle {
                 width: 300px;
-                background: #fafafa;
+                background: root.bg-primary;
                 border-width: 1px;
-                border-color: #ddd;
+                border-color: root.border-color;
 
                 VerticalBox {
 
                 // Panel header
                 Rectangle {
                     height: 30px;
-                    background: #e8e8e8;
+                    background: root.bg-header;
 
                     HorizontalBox {
                         padding: 6px;
@@ -261,7 +307,7 @@ export component MainWindow inherits Window {
                             text: "Details";
                             font-weight: 700;
                             vertical-alignment: center;
-                            color: #000;
+                            color: root.text-primary;
                         }
 
                         Rectangle {
@@ -316,14 +362,14 @@ export component MainWindow inherits Window {
                                 Text {
                                     text: "Name:";
                                     font-size: 10px;
-                                    color: #666;
+                                    color: root.text-secondary;
                                 }
 
                                 Text {
                                     text: root.selected-item-name;
                                     font-weight: 700;
                                     font-size: 14px;
-                                    color: #000;
+                                    color: root.text-primary;
                                 }
                             }
 
@@ -334,19 +380,19 @@ export component MainWindow inherits Window {
                                 Text {
                                     text: "Classification Path:";
                                     font-size: 10px;
-                                    color: #666;
+                                    color: root.text-secondary;
                                 }
 
                                 Text {
                                     text: root.selected-item-path;
                                     wrap: word-wrap;
-                                    color: #000;
+                                    color: root.text-primary;
                                 }
                             }
 
                             Rectangle {
                                 height: 1px;
-                                background: #ddd;
+                                background: root.border-color;
                             }
 
                             // Facets (read-only)
@@ -356,13 +402,13 @@ export component MainWindow inherits Window {
                                 Text {
                                     text: "Facets:";
                                     font-size: 10px;
-                                    color: #666;
+                                    color: root.text-secondary;
                                 }
 
                                 Text {
                                     text: root.selected-item-facets;
                                     wrap: word-wrap;
-                                    color: #000;
+                                    color: root.text-primary;
                                 }
                             }
                         }
@@ -376,14 +422,14 @@ export component MainWindow inherits Window {
 
                                 Text {
                                     text: root.validation-error;
-                                    color: #d00;
+                                    color: root.text-error;
                                     font-weight: 700;
                                     wrap: word-wrap;
                                 }
 
                                 Rectangle {
                                     height: 1px;
-                                    background: #ddd;
+                                    background: root.border-color;
                                 }
                             }
 
@@ -394,7 +440,7 @@ export component MainWindow inherits Window {
                                 Text {
                                     text: "Name:";
                                     font-size: 10px;
-                                    color: #666;
+                                    color: root.text-secondary;
                                 }
 
                                 LineEdit {
@@ -409,7 +455,7 @@ export component MainWindow inherits Window {
                                 Text {
                                     text: "Classification Path (comma-separated):";
                                     font-size: 10px;
-                                    color: #666;
+                                    color: root.text-secondary;
                                 }
 
                                 LineEdit {
@@ -420,7 +466,7 @@ export component MainWindow inherits Window {
 
                             Rectangle {
                                 height: 1px;
-                                background: #ddd;
+                                background: root.border-color;
                             }
 
                             // Facets (editable - one per line or comma-separated)
@@ -430,7 +476,7 @@ export component MainWindow inherits Window {
                                 Text {
                                     text: "Facets (format: key=value, comma-separated):";
                                     font-size: 10px;
-                                    color: #666;
+                                    color: root.text-secondary;
                                 }
 
                                 LineEdit {
@@ -441,13 +487,13 @@ export component MainWindow inherits Window {
 
                             Rectangle {
                                 height: 1px;
-                                background: #ddd;
+                                background: root.border-color;
                             }
 
                             Text {
                                 text: "Note: Changes require validation before saving";
                                 font-size: 11px;
-                                color: #999;
+                                color: root.text-tertiary;
                                 wrap: word-wrap;
                             }
                         }
@@ -461,14 +507,14 @@ export component MainWindow inherits Window {
 
                                 Text {
                                     text: root.validation-error;
-                                    color: #d00;
+                                    color: root.text-error;
                                     font-weight: 700;
                                     wrap: word-wrap;
                                 }
 
                                 Rectangle {
                                     height: 1px;
-                                    background: #ddd;
+                                    background: root.border-color;
                                 }
                             }
 
@@ -476,12 +522,12 @@ export component MainWindow inherits Window {
                                 text: "Create New Item";
                                 font-weight: 700;
                                 font-size: 14px;
-                                color: #000;
+                                color: root.text-primary;
                             }
 
                             Rectangle {
                                 height: 1px;
-                                background: #ddd;
+                                background: root.border-color;
                             }
 
                             // Item name
@@ -491,7 +537,7 @@ export component MainWindow inherits Window {
                                 Text {
                                     text: "Name:";
                                     font-size: 10px;
-                                    color: #666;
+                                    color: root.text-secondary;
                                 }
 
                                 LineEdit {
@@ -507,7 +553,7 @@ export component MainWindow inherits Window {
                                 Text {
                                     text: "Classification Path (comma-separated):";
                                     font-size: 10px;
-                                    color: #666;
+                                    color: root.text-secondary;
                                 }
 
                                 LineEdit {
@@ -518,7 +564,7 @@ export component MainWindow inherits Window {
 
                             Rectangle {
                                 height: 1px;
-                                background: #ddd;
+                                background: root.border-color;
                             }
 
                             // Facets
@@ -528,7 +574,7 @@ export component MainWindow inherits Window {
                                 Text {
                                     text: "Facets (format: key=value, comma-separated):";
                                     font-size: 10px;
-                                    color: #666;
+                                    color: root.text-secondary;
                                 }
 
                                 LineEdit {
@@ -540,12 +586,12 @@ export component MainWindow inherits Window {
 
                         if root.selected-item-name == "" && root.taxonomy-description != "" && !root.is-creating : Text {
                             text: "Select an item to view details";
-                            color: #999;
+                            color: root.text-tertiary;
                         }
 
                         if root.taxonomy-description == "" : Text {
                             text: "No taxonomy loaded";
-                            color: #999;
+                            color: root.text-tertiary;
                         }
                     }
                 }
@@ -556,15 +602,15 @@ export component MainWindow inherits Window {
         // Bottom panel - Facet Filters
         Rectangle {
             height: 150px;
-            background: #f5f5f5;
+            background: root.bg-secondary;
             border-width: 1px;
-            border-color: #ddd;
+            border-color: root.border-color;
 
             VerticalBox {
                 // Panel header
                 Rectangle {
                     height: 30px;
-                    background: #e8e8e8;
+                    background: root.bg-header;
 
                     HorizontalBox {
                         padding: 6px;
@@ -574,7 +620,7 @@ export component MainWindow inherits Window {
                             text: "Filters";
                             font-weight: 700;
                             vertical-alignment: center;
-                            color: #000;
+                            color: root.text-primary;
                         }
 
                         Rectangle {
@@ -607,7 +653,7 @@ export component MainWindow inherits Window {
                                 text: "Filter by Genus (comma-separated):";
                                 font-size: 11px;
                                 font-weight: 600;
-                                color: #333;
+                                color: root.text-primary;
                             }
 
                             LineEdit {
@@ -624,7 +670,7 @@ export component MainWindow inherits Window {
                                 text: "Filter by Facets (comma-separated, format: name=value):";
                                 font-size: 11px;
                                 font-weight: 600;
-                                color: #333;
+                                color: root.text-primary;
                             }
 
                             LineEdit {
@@ -641,12 +687,12 @@ export component MainWindow inherits Window {
                                 text: "Active Filters:";
                                 font-size: 11px;
                                 font-weight: 600;
-                                color: #333;
+                                color: root.text-primary;
                             }
 
                             Text {
                                 text: root.active-filters-text;
-                                color: #666;
+                                color: root.text-secondary;
                                 wrap: word-wrap;
                             }
                         }
@@ -659,12 +705,12 @@ export component MainWindow inherits Window {
                                 text: "Available Facets:";
                                 font-size: 11px;
                                 font-weight: 600;
-                                color: #333;
+                                color: root.text-primary;
                             }
 
                             Text {
                                 text: root.facet-dimensions-text;
-                                color: #999;
+                                color: root.text-tertiary;
                                 font-size: 10px;
                                 wrap: word-wrap;
                             }
@@ -677,7 +723,7 @@ export component MainWindow inherits Window {
         // Status bar
         Rectangle {
             height: 30px;
-            background: #f0f0f0;
+            background: root.bg-statusbar;
 
             HorizontalBox {
                 padding: 8px;
@@ -685,7 +731,7 @@ export component MainWindow inherits Window {
                 Text {
                     text: root.status-message;
                     vertical-alignment: center;
-                    color: #000;
+                    color: root.text-primary;
                 }
             }
         }
