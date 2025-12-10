@@ -1,3 +1,4 @@
+use clap::Parser;
 use slint::{ComponentHandle, Model, SharedString, StandardListViewItem, VecModel};
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -5,6 +6,16 @@ use std::rc::Rc;
 use taxstud_core::*;
 
 slint::slint!(export { MainWindow } from "ui/app-window.slint";);
+
+/// TaxStud - Hybrid Taxonomy Management System
+#[derive(Parser, Debug)]
+#[command(name = "taxstud")]
+#[command(author, version, about = "Hybrid Taxonomy Management System", long_about = None)]
+struct Args {
+    /// Path to taxonomy JSON file to load on startup
+    #[arg(value_name = "FILE")]
+    file: Option<PathBuf>,
+}
 
 /// Application state management
 #[derive(Debug)]
@@ -125,11 +136,38 @@ impl AppState {
 }
 
 pub fn main() {
+    let args = Args::parse();
+
     let main_window = MainWindow::new().unwrap();
     let state = Rc::new(RefCell::new(AppState::new()));
 
     // Set initial window title
     main_window.set_window_title(SharedString::from("Taxonomy Studio - No file loaded"));
+
+    // Load file from command line if provided
+    if let Some(file_path) = args.file {
+        let load_result = state.borrow_mut().load_from_file(file_path.clone());
+
+        match load_result {
+            Ok(_) => {
+                // Update window title
+                let title = state.borrow().get_window_title();
+                main_window.set_window_title(SharedString::from(title));
+
+                // Update UI with loaded data
+                update_ui_from_state(&main_window, &state.borrow());
+
+                main_window.set_status_message(SharedString::from(
+                    format!("Loaded: {}", file_path.display())
+                ));
+            }
+            Err(e) => {
+                main_window.set_status_message(SharedString::from(
+                    format!("Error loading file: {}", e)
+                ));
+            }
+        }
+    }
 
     // Item selection handler
     {
