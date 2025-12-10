@@ -26,8 +26,6 @@ struct AppState {
     current_file: Option<PathBuf>,
     /// Whether there are unsaved changes
     dirty: bool,
-    /// Currently selected hierarchy node (species name)
-    selected_hierarchy_node: Option<String>,
     /// Currently selected item index
     selected_item: Option<usize>,
     /// Active filters
@@ -40,7 +38,6 @@ impl AppState {
             taxonomy: None,
             current_file: None,
             dirty: false,
-            selected_hierarchy_node: None,
             selected_item: None,
             filters: Filters {
                 genera: Vec::new(),
@@ -61,7 +58,6 @@ impl AppState {
         self.taxonomy = Some(taxonomy);
         self.current_file = Some(path);
         self.dirty = false;
-        self.selected_hierarchy_node = None;
         self.selected_item = None;
 
         Ok(())
@@ -112,7 +108,6 @@ impl AppState {
         self.taxonomy = Some(new_taxonomy);
         self.current_file = None;
         self.dirty = true;
-        self.selected_hierarchy_node = None;
         self.selected_item = None;
     }
 
@@ -132,6 +127,32 @@ impl AppState {
         let dirty_marker = if self.dirty { "*" } else { "" };
 
         format!("Taxonomy Studio - {}{}", file_name, dirty_marker)
+    }
+
+    /// Get a reference to an item by index
+    #[allow(dead_code)]
+    fn get_item(&self, index: i32) -> Option<&Item> {
+        if index < 0 {
+            return None;
+        }
+
+        self.taxonomy
+            .as_ref()
+            .and_then(|t| t.example_items.as_ref())
+            .and_then(|items| items.get(index as usize))
+    }
+
+    /// Get a mutable reference to an item by index
+    #[allow(dead_code)]
+    fn get_item_mut(&mut self, index: i32) -> Option<&mut Item> {
+        if index < 0 {
+            return None;
+        }
+
+        self.taxonomy
+            .as_mut()
+            .and_then(|t| t.example_items.as_mut())
+            .and_then(|items| items.get_mut(index as usize))
     }
 }
 
@@ -372,19 +393,15 @@ pub fn main() {
                 .filter(|s| !s.is_empty())
                 .collect();
 
-            // Get the facet filter text
+            // Get the facet filter text and parse it
             let facet_text = main_window.get_facet_filter_text().to_string();
+            let facet_strings: Vec<String> = facet_text
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
 
-            // Parse facet filters (format: "name=value, name2=value2")
-            let mut facet_map: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
-            for facet_str in facet_text.split(',') {
-                if let Some((key, value)) = facet_str.split_once('=') {
-                    facet_map
-                        .entry(key.trim().to_string())
-                        .or_insert_with(Vec::new)
-                        .push(value.trim().to_string());
-                }
-            }
+            let facet_map = parse_facet_filters(&facet_strings);
 
             // Update state filters
             {
@@ -700,16 +717,12 @@ pub fn main() {
                 drop(state_mut);
                 main_window.set_is_creating(false);
 
-                // Update window title
-                let title = state.borrow().get_window_title();
-                main_window.set_window_title(SharedString::from(title));
-
-                // Refresh the UI
-                update_ui_from_state(&main_window, &state.borrow());
-
-                main_window.set_status_message(SharedString::from(
-                    format!("Item '{}' created successfully", new_name)
-                ));
+                // Refresh UI and show success message
+                refresh_ui_after_state_change(
+                    &main_window,
+                    &state,
+                    &format!("Item '{}' created successfully", new_name),
+                );
             }
         });
     }
@@ -825,16 +838,12 @@ pub fn main() {
                         // Exit and update
                         drop(state_mut);
 
-                        // Update window title
-                        let title = state.borrow().get_window_title();
-                        main_window.set_window_title(SharedString::from(title));
-
-                        // Refresh the UI
-                        update_ui_from_state(&main_window, &state.borrow());
-
-                        main_window.set_status_message(SharedString::from(
-                            format!("Item '{}' deleted", item_name)
-                        ));
+                        // Refresh UI and show success message
+                        refresh_ui_after_state_change(
+                            &main_window,
+                            &state,
+                            &format!("Item '{}' deleted", item_name),
+                        );
                     }
                 }
             }
@@ -842,6 +851,24 @@ pub fn main() {
     }
 
     main_window.run().unwrap();
+}
+
+/// Refresh UI after a state-changing operation (edit, create, delete)
+/// Updates window title, refreshes UI from state, and sets status message
+fn refresh_ui_after_state_change(
+    main_window: &MainWindow,
+    state: &Rc<RefCell<AppState>>,
+    status_message: &str,
+) {
+    // Update window title
+    let title = state.borrow().get_window_title();
+    main_window.set_window_title(SharedString::from(title));
+
+    // Refresh the UI
+    update_ui_from_state(main_window, &state.borrow());
+
+    // Set status
+    main_window.set_status_message(SharedString::from(status_message));
 }
 
 /// Update the UI from the current application state
@@ -855,8 +882,7 @@ fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
     if let Some(ref taxonomy) = state.taxonomy {
         // Update taxonomy description
         let description = taxonomy.taxonomy_description
-            .as_ref()
-            .map(|s| s.as_str())
+            .as_deref()
             .unwrap_or("");
 
         eprintln!("DEBUG: Setting taxonomy description: '{}'", description);

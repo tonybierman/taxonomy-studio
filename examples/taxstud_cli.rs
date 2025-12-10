@@ -1,5 +1,4 @@
 use clap::Parser;
-use std::collections::HashMap;
 use std::process;
 use taxstud_core::*;
 
@@ -91,18 +90,14 @@ fn main() {
 }
 
 fn parse_filters(cli: &Cli) -> Filters {
-    let mut facet_map: HashMap<String, Vec<String>> = HashMap::new();
-
+    // Check for invalid facet formats and warn
     for facet_str in &cli.facets {
-        if let Some((key, value)) = facet_str.split_once('=') {
-            facet_map
-                .entry(key.trim().to_string())
-                .or_insert_with(Vec::new)
-                .push(value.trim().to_string());
-        } else {
+        if !facet_str.contains('=') {
             eprintln!("Warning: Invalid facet format '{}'. Expected 'name=value'", facet_str);
         }
     }
+
+    let facet_map = parse_facet_filters(&cli.facets);
 
     Filters {
         genera: cli.genera.clone(),
@@ -252,20 +247,12 @@ fn print_example_item(item: &Item) {
     println!("**Path:** {}\n", item.classical_path.join(" → "));
 
     println!("**Facets:**\n");
-    let mut facets: Vec<_> = item.facets.iter().collect();
-    facets.sort_by_key(|(name, _)| *name);
+    let mut facets: Vec<_> = item.facets.keys().collect();
+    facets.sort();
 
-    for (facet_name, facet_value) in facets {
-        print!("- {}: ", facet_name);
-        match facet_value {
-            serde_json::Value::String(s) => println!("{}", s),
-            serde_json::Value::Array(arr) => {
-                let values: Vec<String> = arr.iter()
-                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                    .collect();
-                println!("{}", values.join(", "));
-            }
-            _ => println!("{}", facet_value),
+    for facet_name in facets {
+        if let Some(value_str) = item.get_facet_as_string(facet_name) {
+            println!("- {}: {}", facet_name, value_str);
         }
     }
 

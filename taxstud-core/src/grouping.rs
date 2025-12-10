@@ -8,30 +8,22 @@ pub fn group_items_by_facet(items: &[Item], group_field: &str) -> HashMap<String
     let mut groups: HashMap<String, Vec<Item>> = HashMap::new();
 
     for item in items {
-        if let Some(facet_value) = item.facets.get(group_field) {
-            match facet_value {
-                serde_json::Value::String(s) => {
-                    groups.entry(s.clone()).or_insert_with(Vec::new).push(item.clone());
-                }
-                serde_json::Value::Array(arr) => {
-                    // Items with multiple values appear in multiple groups
-                    for val in arr {
-                        if let Some(s) = val.as_str() {
-                            groups
-                                .entry(s.to_string())
-                                .or_insert_with(Vec::new)
-                                .push(item.clone());
-                        }
-                    }
-                }
-                _ => {}
-            }
-        } else {
+        let facet_values = item.get_facet_as_vec(group_field);
+
+        if facet_values.is_empty() {
             // Items without this facet go to "unspecified" group
             groups
                 .entry("_unspecified_".to_string())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(item.clone());
+        } else {
+            // Items with multiple values appear in multiple groups
+            for value in facet_values {
+                groups
+                    .entry(value)
+                    .or_default()
+                    .push(item.clone());
+            }
         }
     }
 

@@ -3,7 +3,7 @@ use regex::Regex;
 use unicode_normalization::UnicodeNormalization;
 
 /// Sort items by the specified field (either "name" or a facet name)
-pub fn sort_items(items: &mut Vec<Item>, sort_field: &str) {
+pub fn sort_items(items: &mut [Item], sort_field: &str) {
     items.sort_by(|a, b| {
         if sort_field == "name" {
             // Library science sorting: strip articles, normalize unicode, handle numbers
@@ -20,8 +20,8 @@ pub fn sort_items(items: &mut Vec<Item>, sort_field: &str) {
             }
         } else {
             // Sort by facet value
-            let a_val = get_facet_string(a, sort_field);
-            let b_val = get_facet_string(b, sort_field);
+            let a_val = a.get_facet_as_string(sort_field).unwrap_or_default();
+            let b_val = b.get_facet_as_string(sort_field).unwrap_or_default();
 
             // Normalize facet values for sorting
             let a_key = normalize_for_sorting(&a_val);
@@ -64,22 +64,4 @@ pub fn normalize_for_sorting(s: &str) -> String {
 pub fn strip_leading_articles(s: &str) -> String {
     let re = Regex::new(r"^(?i)(the|a|an|der|die|das|le|la|les|el|la|los|las|il|lo|i|gli|un|une|een)\s+").unwrap();
     re.replace(s, "").to_string()
-}
-
-/// Get facet value as a string (handles both single values and arrays)
-fn get_facet_string(item: &Item, facet_name: &str) -> String {
-    item.facets
-        .get(facet_name)
-        .and_then(|v| match v {
-            serde_json::Value::String(s) => Some(s.clone()),
-            serde_json::Value::Array(arr) => {
-                let values: Vec<String> = arr
-                    .iter()
-                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                    .collect();
-                Some(values.join(", "))
-            }
-            _ => None,
-        })
-        .unwrap_or_default()
 }
