@@ -3,6 +3,16 @@ import { LineEdit, Button, StandardListView, GridBox, HorizontalBox, VerticalBox
 
 enum Theme { light, dark }
 
+export struct FacetInput {
+    name: string,
+    value: string,
+}
+
+export struct TreeNode {
+    label: string,
+    indent-level: int,
+}
+
 export component MainWindow inherits Window {
     // Theme
     in-out property <Theme> theme: Theme.dark;
@@ -12,6 +22,7 @@ export component MainWindow inherits Window {
     in property <string> status-message;
     in property <string> taxonomy-description;
     in property <string> hierarchy-root;
+    in property <[TreeNode]> hierarchy-tree: [];
     in property <[StandardListViewItem]> items-list;
     in property <string> facet-dimensions-text;
 
@@ -30,14 +41,14 @@ export component MainWindow inherits Window {
     in-out property <bool> is-editing: false;
     in-out property <string> edit-item-name: "";
     in-out property <string> edit-item-path: "";
-    in-out property <string> edit-item-facets: "";
+    in property <[FacetInput]> edit-facet-inputs: [];
     in property <string> validation-error: "";
 
     // Create mode properties
     in-out property <bool> is-creating: false;
     in-out property <string> new-item-name: "";
     in-out property <string> new-item-path: "";
-    in-out property <string> new-item-facets: "";
+    in property <[FacetInput]> create-facet-inputs: [];
 
     // File operation callbacks
     callback file-open();
@@ -68,6 +79,10 @@ export component MainWindow inherits Window {
 
     // Theme callback
     callback toggle-theme();
+
+    // Facet value update callbacks
+    callback update-edit-facet(int, string);
+    callback update-create-facet(int, string);
 
     // Theme colors (will be set by states)
     property <color> bg-primary: #fafafa;
@@ -156,7 +171,7 @@ export component MainWindow inherits Window {
 
             // Left panel - Hierarchy Tree
             Rectangle {
-                width: 250px;
+                horizontal-stretch: 1;
                 background: root.bg-primary;
                 border-width: 1px;
                 border-color: root.border-color;
@@ -186,29 +201,33 @@ export component MainWindow inherits Window {
                         padding: 8px;
 
                         if root.hierarchy-root != "" : VerticalBox {
-                            spacing: 4px;
+                            spacing: 2px;
 
-                            Text {
-                                text: "Root:";
-                                font-size: 10px;
-                                color: root.text-secondary;
+                            // Root node
+                            HorizontalBox {
+                                padding-left: 4px;
+                                padding-top: 4px;
+                                padding-bottom: 4px;
+
+                                Text {
+                                    text: "⬤ " + root.hierarchy-root;
+                                    font-weight: 700;
+                                    color: root.text-primary;
+                                    font-size: 12px;
+                                }
                             }
 
-                            Text {
-                                text: root.hierarchy-root;
-                                font-weight: 700;
-                                color: root.text-primary;
-                            }
+                            // Tree nodes
+                            for node in root.hierarchy-tree : HorizontalBox {
+                                padding-left: 4px + (node.indent-level * 16px);
+                                padding-top: 2px;
+                                padding-bottom: 2px;
 
-                            Rectangle {
-                                height: 8px;
-                            }
-
-                            Text {
-                                text: "Hierarchy tree will be implemented in Phase 4";
-                                font-size: 11px;
-                                color: root.text-tertiary;
-                                wrap: word-wrap;
+                                Text {
+                                    text: "├─ " + node.label;
+                                    color: root.text-secondary;
+                                    font-size: 11px;
+                                }
                             }
                         }
 
@@ -287,7 +306,7 @@ export component MainWindow inherits Window {
 
             // Right panel - Details/Edit
             Rectangle {
-                width: 300px;
+                horizontal-stretch: 1;
                 background: root.bg-primary;
                 border-width: 1px;
                 border-color: root.border-color;
@@ -469,25 +488,41 @@ export component MainWindow inherits Window {
                                 background: root.border-color;
                             }
 
-                            // Facets (editable - one per line or comma-separated)
-                            VerticalBox {
-                                spacing: 4px;
+                            // Facets (editable - individual inputs)
+                            if root.edit-facet-inputs.length > 0 : VerticalBox {
+                                spacing: 8px;
 
                                 Text {
-                                    text: "Facets (format: key=value, comma-separated):";
+                                    text: "Facets:";
                                     font-size: 10px;
                                     color: root.text-secondary;
                                 }
 
-                                LineEdit {
-                                    text <=> root.edit-item-facets;
-                                    placeholder-text: "e.g., temperature=hot, caffeine_content=high";
-                                }
-                            }
+                                for facet-input[idx] in root.edit-facet-inputs : HorizontalBox {
+                                    spacing: 8px;
+                                    alignment: start;
 
-                            Rectangle {
-                                height: 1px;
-                                background: root.border-color;
+                                    Text {
+                                        text: facet-input.name + ":";
+                                        vertical-alignment: center;
+                                        color: root.text-primary;
+                                        font-size: 11px;
+                                        min-width: 120px;
+                                    }
+
+                                    LineEdit {
+                                        text: facet-input.value;
+                                        horizontal-stretch: 1;
+                                        edited => {
+                                            root.update-edit-facet(idx, self.text);
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    height: 1px;
+                                    background: root.border-color;
+                                }
                             }
 
                             Text {
@@ -567,19 +602,35 @@ export component MainWindow inherits Window {
                                 background: root.border-color;
                             }
 
-                            // Facets
-                            VerticalBox {
-                                spacing: 4px;
+                            // Facets (individual inputs)
+                            if root.create-facet-inputs.length > 0 : VerticalBox {
+                                spacing: 8px;
 
                                 Text {
-                                    text: "Facets (format: key=value, comma-separated):";
+                                    text: "Facets:";
                                     font-size: 10px;
                                     color: root.text-secondary;
                                 }
 
-                                LineEdit {
-                                    text <=> root.new-item-facets;
-                                    placeholder-text: "e.g., temperature=hot, caffeine_content=high";
+                                for facet-input[idx] in root.create-facet-inputs : HorizontalBox {
+                                    spacing: 8px;
+                                    alignment: start;
+
+                                    Text {
+                                        text: facet-input.name + ":";
+                                        vertical-alignment: center;
+                                        color: root.text-primary;
+                                        font-size: 11px;
+                                        min-width: 120px;
+                                    }
+
+                                    LineEdit {
+                                        text: facet-input.value;
+                                        horizontal-stretch: 1;
+                                        edited => {
+                                            root.update-create-facet(idx, self.text);
+                                        }
+                                    }
                                 }
                             }
                         }

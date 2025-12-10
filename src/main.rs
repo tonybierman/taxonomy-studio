@@ -1,4 +1,4 @@
-use slint::{ComponentHandle, SharedString, StandardListViewItem, VecModel};
+use slint::{ComponentHandle, Model, SharedString, StandardListViewItem, VecModel};
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -444,9 +444,10 @@ pub fn main() {
                             item.classical_path.join(", ")
                         ));
 
-                        // Format facets for editing (key=value, comma-separated)
-                        let facets_edit = format_facets_for_edit(&item.facets);
-                        main_window.set_edit_item_facets(SharedString::from(facets_edit));
+                        // Populate facet inputs based on taxonomy dimensions
+                        let facet_inputs = create_facet_inputs(&taxonomy.faceted_dimensions, &item.facets);
+                        let facet_inputs_model = Rc::new(VecModel::from(facet_inputs));
+                        main_window.set_edit_facet_inputs(facet_inputs_model.into());
 
                         // Enter edit mode
                         main_window.set_is_editing(true);
@@ -469,7 +470,7 @@ pub fn main() {
             // Get edited values
             let new_name = main_window.get_edit_item_name().to_string();
             let new_path = main_window.get_edit_item_path().to_string();
-            let new_facets = main_window.get_edit_item_facets().to_string();
+            let facet_inputs = main_window.get_edit_facet_inputs();
 
             // Validate inputs
             if new_name.trim().is_empty() {
@@ -489,22 +490,15 @@ pub fn main() {
                 return;
             }
 
-            // Parse facets (key=value pairs)
+            // Collect facets from inputs
             let mut facets_map: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
-            for facet_str in new_facets.split(',') {
-                if facet_str.trim().is_empty() {
-                    continue;
-                }
-                if let Some((key, value)) = facet_str.split_once('=') {
+            for facet_input in facet_inputs.iter() {
+                let value = facet_input.value.to_string();
+                if !value.trim().is_empty() {
                     facets_map.insert(
-                        key.trim().to_string(),
+                        facet_input.name.to_string(),
                         serde_json::Value::String(value.trim().to_string())
                     );
-                } else {
-                    main_window.set_validation_error(SharedString::from(
-                        format!("Invalid facet format: '{}'. Use key=value", facet_str)
-                    ));
-                    return;
                 }
             }
 
@@ -576,15 +570,24 @@ pub fn main() {
     // Start Create Item
     {
         let main_window_weak = main_window.as_weak();
+        let state = state.clone();
 
         main_window.on_start_create_item(move || {
             let main_window = main_window_weak.unwrap();
+            let state_borrow = state.borrow();
 
             // Clear form fields
             main_window.set_new_item_name(SharedString::from(""));
             main_window.set_new_item_path(SharedString::from(""));
-            main_window.set_new_item_facets(SharedString::from(""));
             main_window.set_validation_error(SharedString::from(""));
+
+            // Populate facet inputs based on taxonomy dimensions
+            if let Some(ref taxonomy) = state_borrow.taxonomy {
+                let empty_facets = std::collections::HashMap::new();
+                let facet_inputs = create_facet_inputs(&taxonomy.faceted_dimensions, &empty_facets);
+                let facet_inputs_model = Rc::new(VecModel::from(facet_inputs));
+                main_window.set_create_facet_inputs(facet_inputs_model.into());
+            }
 
             // Enter create mode
             main_window.set_is_creating(true);
@@ -603,7 +606,7 @@ pub fn main() {
             // Get form values
             let new_name = main_window.get_new_item_name().to_string();
             let new_path = main_window.get_new_item_path().to_string();
-            let new_facets = main_window.get_new_item_facets().to_string();
+            let facet_inputs = main_window.get_create_facet_inputs();
 
             // Validate inputs
             if new_name.trim().is_empty() {
@@ -623,22 +626,15 @@ pub fn main() {
                 return;
             }
 
-            // Parse facets (key=value pairs)
+            // Collect facets from inputs
             let mut facets_map: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
-            for facet_str in new_facets.split(',') {
-                if facet_str.trim().is_empty() {
-                    continue;
-                }
-                if let Some((key, value)) = facet_str.split_once('=') {
+            for facet_input in facet_inputs.iter() {
+                let value = facet_input.value.to_string();
+                if !value.trim().is_empty() {
                     facets_map.insert(
-                        key.trim().to_string(),
+                        facet_input.name.to_string(),
                         serde_json::Value::String(value.trim().to_string())
                     );
-                } else {
-                    main_window.set_validation_error(SharedString::from(
-                        format!("Invalid facet format: '{}'. Use key=value", facet_str)
-                    ));
-                    return;
                 }
             }
 
@@ -709,6 +705,40 @@ pub fn main() {
                 Theme::Light
             };
             main_window.set_theme(new_theme);
+        });
+    }
+
+    // Update Edit Facet Value
+    {
+        let main_window_weak = main_window.as_weak();
+
+        main_window.on_update_edit_facet(move |index, value| {
+            let main_window = main_window_weak.unwrap();
+            let facet_inputs = main_window.get_edit_facet_inputs();
+            if let Some(model) = facet_inputs.as_any().downcast_ref::<VecModel<FacetInput>>() {
+                if (index as usize) < model.row_count() {
+                    let mut item = model.row_data(index as usize).unwrap();
+                    item.value = value;
+                    model.set_row_data(index as usize, item);
+                }
+            }
+        });
+    }
+
+    // Update Create Facet Value
+    {
+        let main_window_weak = main_window.as_weak();
+
+        main_window.on_update_create_facet(move |index, value| {
+            let main_window = main_window_weak.unwrap();
+            let facet_inputs = main_window.get_create_facet_inputs();
+            if let Some(model) = facet_inputs.as_any().downcast_ref::<VecModel<FacetInput>>() {
+                if (index as usize) < model.row_count() {
+                    let mut item = model.row_data(index as usize).unwrap();
+                    item.value = value;
+                    model.set_row_data(index as usize, item);
+                }
+            }
         });
     }
 
@@ -798,6 +828,11 @@ fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
         eprintln!("DEBUG: Setting hierarchy root: '{}'", taxonomy.classical_hierarchy.root);
         main_window.set_hierarchy_root(SharedString::from(&taxonomy.classical_hierarchy.root));
 
+        // Update hierarchy tree
+        let tree_nodes = flatten_hierarchy(&taxonomy.classical_hierarchy);
+        let tree_model = Rc::new(VecModel::from(tree_nodes));
+        main_window.set_hierarchy_tree(tree_model.into());
+
         // Update facet dimensions
         let facet_dims_text = format_facet_dimensions(&taxonomy.faceted_dimensions);
         main_window.set_facet_dimensions_text(SharedString::from(facet_dims_text));
@@ -823,6 +858,8 @@ fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
         // Clear UI
         main_window.set_taxonomy_description(SharedString::from(""));
         main_window.set_hierarchy_root(SharedString::from(""));
+        let empty_tree_model = Rc::new(VecModel::<TreeNode>::default());
+        main_window.set_hierarchy_tree(empty_tree_model.into());
         main_window.set_facet_dimensions_text(SharedString::from(""));
         let empty_model = Rc::new(VecModel::<StandardListViewItem>::default());
         main_window.set_items_list(empty_model.into());
@@ -865,25 +902,68 @@ fn format_facet_dimensions(dimensions: &std::collections::HashMap<String, Vec<St
     dim_lines.join(" • ")
 }
 
-/// Format facets for editing (key=value, comma-separated)
-fn format_facets_for_edit(facets: &std::collections::HashMap<String, serde_json::Value>) -> String {
-    let mut facet_pairs: Vec<String> = facets
-        .iter()
-        .map(|(key, value)| {
-            let value_str = match value {
-                serde_json::Value::String(s) => s.clone(),
-                serde_json::Value::Array(arr) => {
-                    arr.iter()
-                        .filter_map(|v| v.as_str())
-                        .collect::<Vec<_>>()
-                        .join(", ")
+/// Create facet input list from taxonomy dimensions and current facet values
+fn create_facet_inputs(
+    dimensions: &std::collections::HashMap<String, Vec<String>>,
+    facets: &std::collections::HashMap<String, serde_json::Value>
+) -> Vec<FacetInput> {
+    let mut facet_inputs: Vec<FacetInput> = dimensions
+        .keys()
+        .map(|key| {
+            let value = facets.get(key).map(|v| {
+                match v {
+                    serde_json::Value::String(s) => s.clone(),
+                    serde_json::Value::Array(arr) => {
+                        arr.iter()
+                            .filter_map(|v| v.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    }
+                    _ => v.to_string(),
                 }
-                _ => value.to_string(),
-            };
-            format!("{}={}", key, value_str)
+            }).unwrap_or_default();
+
+            FacetInput {
+                name: SharedString::from(key.as_str()),
+                value: SharedString::from(value),
+            }
         })
         .collect();
 
-    facet_pairs.sort();
-    facet_pairs.join(", ")
+    facet_inputs.sort_by(|a, b| a.name.cmp(&b.name));
+    facet_inputs
+}
+
+/// Flatten hierarchy tree into a list of tree nodes with indentation levels
+fn flatten_hierarchy(hierarchy: &ClassicalHierarchy) -> Vec<TreeNode> {
+    let mut nodes = Vec::new();
+
+    if let Some(ref children) = hierarchy.children {
+        for child in children {
+            flatten_node(child, 0, &mut nodes);
+        }
+    }
+
+    nodes
+}
+
+/// Recursively flatten a hierarchy node and its children
+fn flatten_node(node: &HierarchyNode, indent_level: i32, nodes: &mut Vec<TreeNode>) {
+    // Format: "species (differentia)"
+    let label = if node.differentia.is_empty() {
+        node.species.clone()
+    } else {
+        format!("{} ({})", node.species, node.differentia)
+    };
+
+    nodes.push(TreeNode {
+        label: SharedString::from(label),
+        indent_level,
+    });
+
+    if let Some(ref children) = node.children {
+        for child in children {
+            flatten_node(child, indent_level + 1, nodes);
+        }
+    }
 }
