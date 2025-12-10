@@ -738,6 +738,18 @@ pub fn main() {
         });
     }
 
+    // About
+    {
+        let main_window_weak = main_window.as_weak();
+
+        main_window.on_about(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Exit create mode without saving
+            set_status(&main_window, "Taxonomy Studio 0.1.0 by Tony Bierman", StatusLevel::Info);
+        });
+    }
+
     // Theme Toggle
     {
         let main_window_weak = main_window.as_weak();

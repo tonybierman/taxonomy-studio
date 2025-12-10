@@ -20,6 +20,7 @@ export struct TreeNode {
 }
 
 export component MainWindow inherits Window {
+
     // Theme
     in-out property <Theme> theme: Theme.dark;
 
@@ -85,6 +86,9 @@ export component MainWindow inherits Window {
 
     // Theme callback
     callback toggle-theme();
+
+    // About callback
+    callback about();
 
     // Facet value update callbacks
     callback update-edit-facet(int, string);
@@ -168,6 +172,15 @@ export component MainWindow inherits Window {
             MenuItem {
                 title: root.theme == Theme.light ? "Dark Theme" : "Light Theme";
                 activated => { root.toggle-theme(); }
+            }
+        }
+
+        Menu {
+            title: "Help";
+
+            MenuItem {
+                title: "About";
+                activated => { root.about(); }
             }
         }
     }
