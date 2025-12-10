@@ -1,0 +1,812 @@
+{
+  "taxonomy_description": "Hybrid taxonomy for movies combining classical hierarchical structure with faceted classification",
+  "classical_hierarchy": {
+    "root": "Movie",
+    "children": [
+      {
+        "genus": "Movie",
+        "species": "Narrative Film",
+        "differentia": "tells a fictional or fictionalized story",
+        "children": [
+          {
+            "genus": "Narrative Film",
+            "species": "Drama",
+            "differentia": "focuses on realistic characters and emotional themes"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Comedy",
+            "differentia": "primarily intended to amuse and entertain"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Action",
+            "differentia": "emphasizes physical feats and stunts"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Thriller",
+            "differentia": "creates suspense and tension"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Horror",
+            "differentia": "intended to frighten or disturb"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Science Fiction",
+            "differentia": "explores speculative or futuristic concepts"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Fantasy",
+            "differentia": "features magical or supernatural elements"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Romance",
+            "differentia": "centers on romantic relationships"
+          }
+        ]
+      },
+      {
+        "genus": "Movie",
+        "species": "Documentary",
+        "differentia": "presents factual information about real subjects",
+        "children": [
+          {
+            "genus": "Documentary",
+            "species": "Nature Documentary",
+            "differentia": "focuses on wildlife and natural environments"
+          },
+          {
+            "genus": "Documentary",
+            "species": "Historical Documentary",
+            "differentia": "examines past events and figures"
+          },
+          {
+            "genus": "Documentary",
+            "species": "Social Documentary",
+            "differentia": "explores social issues and human experiences"
+          }
+        ]
+      },
+      {
+        "genus": "Movie",
+        "species": "Animated Film",
+        "differentia": "created through animation rather than live action",
+        "children": [
+          {
+            "genus": "Animated Film",
+            "species": "Traditional Animation",
+            "differentia": "hand-drawn or 2D animation"
+          },
+          {
+            "genus": "Animated Film",
+            "species": "Computer Animation",
+            "differentia": "created using 3D CGI technology"
+          }
+        ]
+      }
+    ]
+  },
+  "faceted_dimensions": {
+    "runtime": ["short", "standard", "long", "epic"],
+    "target_audience": ["children", "family", "teen", "adult", "mature"],
+    "pacing": ["slow", "deliberate", "moderate", "fast", "frenetic"],
+    "tone": ["lighthearted", "humorous", "serious", "dark", "grim", "whimsical", "satirical", "somber", "heartwarming"],
+    "visual_style": ["naturalistic", "stylized", "noir", "colorful", "minimalist", "baroque", "surreal"],
+    "budget_scale": ["micro", "low", "medium", "high", "blockbuster"],
+    "critical_reception": ["poor", "mixed", "positive", "acclaimed", "masterpiece"],
+    "box_office": ["flop", "modest", "successful", "hit", "phenomenon"],
+    "era": ["silent", "golden_age", "new_hollywood", "modern", "contemporary"],
+    "setting_period": ["ancient", "medieval", "victorian", "early_20th", "mid_20th", "contemporary", "near_future", "far_future"],
+    "emotional_impact": ["uplifting", "heartwarming", "thought_provoking", "devastating", "terrifying", "thrilling", "melancholic"],
+    "narrative_complexity": ["simple", "straightforward", "moderate", "complex", "labyrinthine"],
+    "violence_level": ["none", "mild", "moderate", "intense", "extreme"],
+    "cultural_origin": ["hollywood", "european", "asian", "latin_american", "african", "middle_eastern", "indie"]
+  },
+  "example_items": [
+    {
+      "name": "The Shawshank Redemption",
+      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "deliberate",
+        "tone": "serious",
+        "visual_style": "naturalistic",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "modest",
+        "era": "modern",
+        "setting_period": "mid_20th",
+        "emotional_impact": "uplifting",
+        "narrative_complexity": "moderate",
+        "violence_level": "moderate",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Pulp Fiction",
+      "classical_path": ["Movie", "Narrative Film", "Thriller"],
+      "facets": {
+        "runtime": "long",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "dark",
+        "visual_style": "stylized",
+        "budget_scale": "low",
+        "critical_reception": "masterpiece",
+        "box_office": "hit",
+        "era": "modern",
+        "setting_period": "contemporary",
+        "emotional_impact": "thrilling",
+        "narrative_complexity": "complex",
+        "violence_level": "intense",
+        "cultural_origin": "indie"
+      }
+    },
+    {
+      "name": "Toy Story",
+      "classical_path": ["Movie", "Animated Film", "Computer Animation"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "family",
+        "pacing": "moderate",
+        "tone": "lighthearted",
+        "visual_style": "colorful",
+        "budget_scale": "high",
+        "critical_reception": "acclaimed",
+        "box_office": "phenomenon",
+        "era": "modern",
+        "setting_period": "contemporary",
+        "emotional_impact": "heartwarming",
+        "narrative_complexity": "simple",
+        "violence_level": "none",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "The Dark Knight",
+      "classical_path": ["Movie", "Narrative Film", "Action"],
+      "facets": {
+        "runtime": "long",
+        "target_audience": "adult",
+        "pacing": "fast",
+        "tone": "dark",
+        "visual_style": "noir",
+        "budget_scale": "blockbuster",
+        "critical_reception": "acclaimed",
+        "box_office": "phenomenon",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "thrilling",
+        "narrative_complexity": "complex",
+        "violence_level": "intense",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Spirited Away",
+      "classical_path": ["Movie", "Animated Film", "Traditional Animation"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "family",
+        "pacing": "moderate",
+        "tone": "whimsical",
+        "visual_style": "surreal",
+        "budget_scale": "medium",
+        "critical_reception": "masterpiece",
+        "box_office": "hit",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "thought_provoking",
+        "narrative_complexity": "complex",
+        "violence_level": "mild",
+        "cultural_origin": "asian"
+      }
+    },
+    {
+      "name": "Parasite",
+      "classical_path": ["Movie", "Narrative Film", "Thriller"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "dark",
+        "visual_style": "stylized",
+        "budget_scale": "low",
+        "critical_reception": "masterpiece",
+        "box_office": "hit",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "thought_provoking",
+        "narrative_complexity": "complex",
+        "violence_level": "intense",
+        "cultural_origin": "asian"
+      }
+    },
+    {
+      "name": "Inception",
+      "classical_path": ["Movie", "Narrative Film", "Science Fiction"],
+      "facets": {
+        "runtime": "long",
+        "target_audience": "adult",
+        "pacing": "fast",
+        "tone": "serious",
+        "visual_style": "baroque",
+        "budget_scale": "blockbuster",
+        "critical_reception": "acclaimed",
+        "box_office": "phenomenon",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "thrilling",
+        "narrative_complexity": "labyrinthine",
+        "violence_level": "moderate",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "The Grand Budapest Hotel",
+      "classical_path": ["Movie", "Narrative Film", "Comedy"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "whimsical",
+        "visual_style": "baroque",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "successful",
+        "era": "contemporary",
+        "setting_period": "early_20th",
+        "emotional_impact": "heartwarming",
+        "narrative_complexity": "moderate",
+        "violence_level": "mild",
+        "cultural_origin": "indie"
+      }
+    },
+    {
+      "name": "Get Out",
+      "classical_path": ["Movie", "Narrative Film", "Horror"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "dark",
+        "visual_style": "naturalistic",
+        "budget_scale": "low",
+        "critical_reception": "acclaimed",
+        "box_office": "hit",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "terrifying",
+        "narrative_complexity": "moderate",
+        "violence_level": "intense",
+        "cultural_origin": "indie"
+      }
+    },
+    {
+      "name": "The Lord of the Rings: The Fellowship of the Ring",
+      "classical_path": ["Movie", "Narrative Film", "Fantasy"],
+      "facets": {
+        "runtime": "epic",
+        "target_audience": "teen",
+        "pacing": "deliberate",
+        "tone": "serious",
+        "visual_style": "baroque",
+        "budget_scale": "blockbuster",
+        "critical_reception": "acclaimed",
+        "box_office": "phenomenon",
+        "era": "contemporary",
+        "setting_period": "medieval",
+        "emotional_impact": "thrilling",
+        "narrative_complexity": "complex",
+        "violence_level": "intense",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Amélie",
+      "classical_path": ["Movie", "Narrative Film", "Romance"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "whimsical",
+        "visual_style": "colorful",
+        "budget_scale": "low",
+        "critical_reception": "acclaimed",
+        "box_office": "successful",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "heartwarming",
+        "narrative_complexity": "moderate",
+        "violence_level": "none",
+        "cultural_origin": "european"
+      }
+    },
+    {
+      "name": "Mad Max: Fury Road",
+      "classical_path": ["Movie", "Narrative Film", "Action"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "frenetic",
+        "tone": "serious",
+        "visual_style": "stylized",
+        "budget_scale": "blockbuster",
+        "critical_reception": "acclaimed",
+        "box_office": "hit",
+        "era": "contemporary",
+        "setting_period": "far_future",
+        "emotional_impact": "thrilling",
+        "narrative_complexity": "simple",
+        "violence_level": "extreme",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Moonlight",
+      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "slow",
+        "tone": "somber",
+        "visual_style": "naturalistic",
+        "budget_scale": "micro",
+        "critical_reception": "masterpiece",
+        "box_office": "modest",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "devastating",
+        "narrative_complexity": "moderate",
+        "violence_level": "moderate",
+        "cultural_origin": "indie"
+      }
+    },
+    {
+      "name": "Planet Earth II",
+      "classical_path": ["Movie", "Documentary", "Nature Documentary"],
+      "facets": {
+        "runtime": "long",
+        "target_audience": "family",
+        "pacing": "moderate",
+        "tone": "serious",
+        "visual_style": "naturalistic",
+        "budget_scale": "high",
+        "critical_reception": "masterpiece",
+        "box_office": "successful",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "thought_provoking",
+        "narrative_complexity": "straightforward",
+        "violence_level": "mild",
+        "cultural_origin": "european"
+      }
+    },
+    {
+      "name": "Citizen Kane",
+      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "serious",
+        "visual_style": "noir",
+        "budget_scale": "high",
+        "critical_reception": "masterpiece",
+        "box_office": "flop",
+        "era": "golden_age",
+        "setting_period": "early_20th",
+        "emotional_impact": "thought_provoking",
+        "narrative_complexity": "complex",
+        "violence_level": "none",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "The Avengers",
+      "classical_path": ["Movie", "Narrative Film", "Action"],
+      "facets": {
+        "runtime": "long",
+        "target_audience": "teen",
+        "pacing": "fast",
+        "tone": "humorous",
+        "visual_style": "colorful",
+        "budget_scale": "blockbuster",
+        "critical_reception": "positive",
+        "box_office": "phenomenon",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "thrilling",
+        "narrative_complexity": "straightforward",
+        "violence_level": "moderate",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Hereditary",
+      "classical_path": ["Movie", "Narrative Film", "Horror"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "slow",
+        "tone": "grim",
+        "visual_style": "naturalistic",
+        "budget_scale": "low",
+        "critical_reception": "acclaimed",
+        "box_office": "successful",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "terrifying",
+        "narrative_complexity": "complex",
+        "violence_level": "extreme",
+        "cultural_origin": "indie"
+      }
+    },
+    {
+      "name": "Casablanca",
+      "classical_path": ["Movie", "Narrative Film", "Romance"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "serious",
+        "visual_style": "noir",
+        "budget_scale": "medium",
+        "critical_reception": "masterpiece",
+        "box_office": "hit",
+        "era": "golden_age",
+        "setting_period": "mid_20th",
+        "emotional_impact": "melancholic",
+        "narrative_complexity": "straightforward",
+        "violence_level": "mild",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Blade Runner 2049",
+      "classical_path": ["Movie", "Narrative Film", "Science Fiction"],
+      "facets": {
+        "runtime": "long",
+        "target_audience": "adult",
+        "pacing": "slow",
+        "tone": "somber",
+        "visual_style": "baroque",
+        "budget_scale": "blockbuster",
+        "critical_reception": "acclaimed",
+        "box_office": "flop",
+        "era": "contemporary",
+        "setting_period": "far_future",
+        "emotional_impact": "thought_provoking",
+        "narrative_complexity": "complex",
+        "violence_level": "moderate",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Roma",
+      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "slow",
+        "tone": "somber",
+        "visual_style": "naturalistic",
+        "budget_scale": "medium",
+        "critical_reception": "masterpiece",
+        "box_office": "modest",
+        "era": "contemporary",
+        "setting_period": "mid_20th",
+        "emotional_impact": "devastating",
+        "narrative_complexity": "straightforward",
+        "violence_level": "moderate",
+        "cultural_origin": "latin_american"
+      }
+    },
+    {
+      "name": "The Big Lebowski",
+      "classical_path": ["Movie", "Narrative Film", "Comedy"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "humorous",
+        "visual_style": "stylized",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "modest",
+        "era": "modern",
+        "setting_period": "contemporary",
+        "emotional_impact": "uplifting",
+        "narrative_complexity": "moderate",
+        "violence_level": "moderate",
+        "cultural_origin": "indie"
+      }
+    },
+    {
+      "name": "Crouching Tiger, Hidden Dragon",
+      "classical_path": ["Movie", "Narrative Film", "Action"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "serious",
+        "visual_style": "stylized",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "hit",
+        "era": "contemporary",
+        "setting_period": "ancient",
+        "emotional_impact": "melancholic",
+        "narrative_complexity": "moderate",
+        "violence_level": "moderate",
+        "cultural_origin": "asian"
+      }
+    },
+    {
+      "name": "Pan's Labyrinth",
+      "classical_path": ["Movie", "Narrative Film", "Fantasy"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "dark",
+        "visual_style": "surreal",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "successful",
+        "era": "contemporary",
+        "setting_period": "mid_20th",
+        "emotional_impact": "devastating",
+        "narrative_complexity": "moderate",
+        "violence_level": "intense",
+        "cultural_origin": "european"
+      }
+    },
+    {
+      "name": "Jaws",
+      "classical_path": ["Movie", "Narrative Film", "Thriller"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "teen",
+        "pacing": "moderate",
+        "tone": "serious",
+        "visual_style": "naturalistic",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "phenomenon",
+        "era": "new_hollywood",
+        "setting_period": "contemporary",
+        "emotional_impact": "terrifying",
+        "narrative_complexity": "straightforward",
+        "violence_level": "intense",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Coco",
+      "classical_path": ["Movie", "Animated Film", "Computer Animation"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "family",
+        "pacing": "moderate",
+        "tone": "heartwarming",
+        "visual_style": "colorful",
+        "budget_scale": "high",
+        "critical_reception": "acclaimed",
+        "box_office": "hit",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "heartwarming",
+        "narrative_complexity": "straightforward",
+        "violence_level": "none",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "A Separation",
+      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "moderate",
+        "tone": "serious",
+        "visual_style": "naturalistic",
+        "budget_scale": "low",
+        "critical_reception": "masterpiece",
+        "box_office": "modest",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "thought_provoking",
+        "narrative_complexity": "complex",
+        "violence_level": "mild",
+        "cultural_origin": "middle_eastern"
+      }
+    },
+    {
+      "name": "The Exorcist",
+      "classical_path": ["Movie", "Narrative Film", "Horror"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "slow",
+        "tone": "grim",
+        "visual_style": "naturalistic",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "phenomenon",
+        "era": "new_hollywood",
+        "setting_period": "contemporary",
+        "emotional_impact": "terrifying",
+        "narrative_complexity": "straightforward",
+        "violence_level": "intense",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Everything Everywhere All at Once",
+      "classical_path": ["Movie", "Narrative Film", "Science Fiction"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "frenetic",
+        "tone": "humorous",
+        "visual_style": "surreal",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "hit",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "heartwarming",
+        "narrative_complexity": "labyrinthine",
+        "violence_level": "moderate",
+        "cultural_origin": "indie"
+      }
+    },
+    {
+      "name": "The Princess Bride",
+      "classical_path": ["Movie", "Narrative Film", "Fantasy"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "family",
+        "pacing": "moderate",
+        "tone": "humorous",
+        "visual_style": "stylized",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "modest",
+        "era": "modern",
+        "setting_period": "medieval",
+        "emotional_impact": "heartwarming",
+        "narrative_complexity": "straightforward",
+        "violence_level": "mild",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Seven Samurai",
+      "classical_path": ["Movie", "Narrative Film", "Action"],
+      "facets": {
+        "runtime": "epic",
+        "target_audience": "adult",
+        "pacing": "deliberate",
+        "tone": "serious",
+        "visual_style": "naturalistic",
+        "budget_scale": "high",
+        "critical_reception": "masterpiece",
+        "box_office": "successful",
+        "era": "golden_age",
+        "setting_period": "medieval",
+        "emotional_impact": "thought_provoking",
+        "narrative_complexity": "complex",
+        "violence_level": "intense",
+        "cultural_origin": "asian"
+      }
+    },
+    {
+      "name": "12 Years a Slave",
+      "classical_path": ["Movie", "Documentary", "Historical Documentary"],
+      "facets": {
+        "runtime": "long",
+        "target_audience": "adult",
+        "pacing": "deliberate",
+        "tone": "grim",
+        "visual_style": "naturalistic",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "successful",
+        "era": "contemporary",
+        "setting_period": "victorian",
+        "emotional_impact": "devastating",
+        "narrative_complexity": "straightforward",
+        "violence_level": "extreme",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "The Hangover",
+      "classical_path": ["Movie", "Narrative Film", "Comedy"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "fast",
+        "tone": "humorous",
+        "visual_style": "naturalistic",
+        "budget_scale": "medium",
+        "critical_reception": "positive",
+        "box_office": "phenomenon",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "uplifting",
+        "narrative_complexity": "straightforward",
+        "violence_level": "mild",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "City of God",
+      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "adult",
+        "pacing": "fast",
+        "tone": "grim",
+        "visual_style": "stylized",
+        "budget_scale": "low",
+        "critical_reception": "acclaimed",
+        "box_office": "modest",
+        "era": "contemporary",
+        "setting_period": "contemporary",
+        "emotional_impact": "devastating",
+        "narrative_complexity": "complex",
+        "violence_level": "extreme",
+        "cultural_origin": "latin_american"
+      }
+    },
+    {
+      "name": "The Sixth Sense",
+      "classical_path": ["Movie", "Narrative Film", "Thriller"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "teen",
+        "pacing": "moderate",
+        "tone": "dark",
+        "visual_style": "naturalistic",
+        "budget_scale": "medium",
+        "critical_reception": "acclaimed",
+        "box_office": "phenomenon",
+        "era": "modern",
+        "setting_period": "contemporary",
+        "emotional_impact": "thrilling",
+        "narrative_complexity": "complex",
+        "violence_level": "mild",
+        "cultural_origin": "hollywood"
+      }
+    },
+    {
+      "name": "Wall-E",
+      "classical_path": ["Movie", "Animated Film", "Computer Animation"],
+      "facets": {
+        "runtime": "standard",
+        "target_audience": "family",
+        "pacing": "moderate",
+        "tone": "whimsical",
+        "visual_style": "stylized",
+        "budget_scale": "high",
+        "critical_reception": "acclaimed",
+        "box_office": "hit",
+        "era": "contemporary",
+        "setting_period": "far_future",
+        "emotional_impact": "heartwarming",
+        "narrative_complexity": "moderate",
+        "violence_level": "none",
+        "cultural_origin": "hollywood"
+      }
+    }
+  ]
+}
