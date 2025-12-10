@@ -7,6 +7,14 @@ use taxstud_core::*;
 
 slint::slint!(export { MainWindow } from "ui/app-window.slint";);
 
+/// Helper function to set status message with semantic level
+fn set_status(window: &MainWindow, text: impl Into<SharedString>, level: StatusLevel) {
+    window.set_status(StatusMessage {
+        text: text.into(),
+        level,
+    });
+}
+
 /// TaxStud - Hybrid Taxonomy Management System
 #[derive(Parser, Debug)]
 #[command(name = "taxstud")]
@@ -178,14 +186,10 @@ pub fn main() {
                 // Update UI with loaded data
                 update_ui_from_state(&main_window, &state.borrow());
 
-                main_window.set_status_message(SharedString::from(
-                    format!("Loaded: {}", file_path.display())
-                ));
+                set_status(&main_window, format!("Loaded: {}", file_path.display()), StatusLevel::Success);
             }
             Err(e) => {
-                main_window.set_status_message(SharedString::from(
-                    format!("Error loading file: {}", e)
-                ));
+                set_status(&main_window, format!("Error loading file: {}", e), StatusLevel::Danger);
             }
         }
     }
@@ -249,12 +253,10 @@ pub fn main() {
                             // Update UI with loaded data (borrow immutably)
                             update_ui_from_state(&main_window, &state.borrow());
 
-                            main_window.set_status_message(SharedString::from("File loaded successfully"));
+                            set_status(&main_window, "File loaded successfully", StatusLevel::Success);
                         }
                         Err(e) => {
-                            main_window.set_status_message(SharedString::from(
-                                format!("Error loading file: {}", e)
-                            ));
+                            set_status(&main_window, format!("Error loading file: {}", e), StatusLevel::Danger);
                         }
                     }
                 }
@@ -276,12 +278,10 @@ pub fn main() {
                 Ok(_) => {
                     let title = state.borrow().get_window_title();
                     main_window.set_window_title(SharedString::from(title));
-                    main_window.set_status_message(SharedString::from("File saved successfully"));
+                    set_status(&main_window, "File saved successfully", StatusLevel::Success);
                 }
                 Err(e) => {
-                    main_window.set_status_message(SharedString::from(
-                        format!("Error saving file: {}", e)
-                    ));
+                    set_status(&main_window, format!("Error saving file: {}", e), StatusLevel::Danger);
                 }
             }
         });
@@ -311,12 +311,10 @@ pub fn main() {
                         Ok(_) => {
                             let title = state.borrow().get_window_title();
                             main_window.set_window_title(SharedString::from(title));
-                            main_window.set_status_message(SharedString::from("File saved successfully"));
+                            set_status(&main_window, "File saved successfully", StatusLevel::Success);
                         }
                         Err(e) => {
-                            main_window.set_status_message(SharedString::from(
-                                format!("Error saving file: {}", e)
-                            ));
+                            set_status(&main_window, format!("Error saving file: {}", e), StatusLevel::Danger);
                         }
                     }
                 }
@@ -341,7 +339,7 @@ pub fn main() {
 
             update_ui_from_state(&main_window, &state.borrow());
 
-            main_window.set_status_message(SharedString::from("New taxonomy created"));
+            set_status(&main_window, "New taxonomy created", StatusLevel::Success);
         });
     }
 
@@ -369,7 +367,7 @@ pub fn main() {
                         }).collect::<Vec<_>>()
                     ));
                     main_window.set_items_list(items_model.into());
-                    main_window.set_status_message(SharedString::from("Items sorted by name"));
+                    set_status(&main_window, "Items sorted by name", StatusLevel::Info);
                 }
             }
         });
@@ -443,9 +441,7 @@ pub fn main() {
                     };
                     main_window.set_active_filters_text(SharedString::from(filters_text));
 
-                    main_window.set_status_message(SharedString::from(
-                        format!("Filters applied: {} items match", filtered_items.len())
-                    ));
+                    set_status(&main_window, format!("Filters applied: {} items match", filtered_items.len()), StatusLevel::Info);
                 }
             }
         });
@@ -473,7 +469,7 @@ pub fn main() {
             // Reset UI to show all items
             update_ui_from_state(&main_window, &state.borrow());
 
-            main_window.set_status_message(SharedString::from("Filters cleared"));
+            set_status(&main_window, "Filters cleared", StatusLevel::Info);
         });
     }
 
@@ -507,7 +503,7 @@ pub fn main() {
                         // Enter edit mode
                         main_window.set_is_editing(true);
                         main_window.set_validation_error(SharedString::from(""));
-                        main_window.set_status_message(SharedString::from("Editing item..."));
+                        set_status(&main_window, "Editing item...", StatusLevel::Info);
                     }
                 }
             }
@@ -601,7 +597,7 @@ pub fn main() {
                             }
                         }
 
-                        main_window.set_status_message(SharedString::from("Item saved successfully"));
+                        set_status(&main_window, "Item saved successfully", StatusLevel::Success);
                     }
                 }
             }
@@ -618,7 +614,7 @@ pub fn main() {
             // Exit edit mode without saving
             main_window.set_is_editing(false);
             main_window.set_validation_error(SharedString::from(""));
-            main_window.set_status_message(SharedString::from("Edit cancelled"));
+            set_status(&main_window, "Edit cancelled", StatusLevel::Info);
         });
     }
 
@@ -646,7 +642,7 @@ pub fn main() {
 
             // Enter create mode
             main_window.set_is_creating(true);
-            main_window.set_status_message(SharedString::from("Creating new item..."));
+            set_status(&main_window, "Creating new item...", StatusLevel::Info);
         });
     }
 
@@ -722,6 +718,7 @@ pub fn main() {
                     &main_window,
                     &state,
                     &format!("Item '{}' created successfully", new_name),
+                    StatusLevel::Success,
                 );
             }
         });
@@ -737,7 +734,7 @@ pub fn main() {
             // Exit create mode without saving
             main_window.set_is_creating(false);
             main_window.set_validation_error(SharedString::from(""));
-            main_window.set_status_message(SharedString::from("Create cancelled"));
+            set_status(&main_window, "Create cancelled", StatusLevel::Info);
         });
     }
 
@@ -843,6 +840,7 @@ pub fn main() {
                             &main_window,
                             &state,
                             &format!("Item '{}' deleted", item_name),
+                            StatusLevel::Success,
                         );
                     }
                 }
@@ -859,6 +857,7 @@ fn refresh_ui_after_state_change(
     main_window: &MainWindow,
     state: &Rc<RefCell<AppState>>,
     status_message: &str,
+    level: StatusLevel,
 ) {
     // Update window title
     let title = state.borrow().get_window_title();
@@ -868,7 +867,7 @@ fn refresh_ui_after_state_change(
     update_ui_from_state(main_window, &state.borrow());
 
     // Set status
-    main_window.set_status_message(SharedString::from(status_message));
+    set_status(main_window, status_message, level);
 }
 
 /// Update the UI from the current application state

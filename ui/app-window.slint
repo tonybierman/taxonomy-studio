@@ -2,6 +2,12 @@
 import { LineEdit, Button, StandardListView, GridBox, HorizontalBox, VerticalBox, ScrollView } from "std-widgets.slint";
 
 enum Theme { light, dark }
+enum StatusLevel { none, success, info, warning, danger }
+
+export struct StatusMessage {
+    text: string,
+    level: StatusLevel,
+}
 
 export struct FacetInput {
     name: string,
@@ -19,7 +25,7 @@ export component MainWindow inherits Window {
 
     // Window properties
     in property <string> window-title <=> root.title;
-    in property <string> status-message;
+    in property <StatusMessage> status: { text: "", level: StatusLevel.none };
     in property <string> taxonomy-description;
     in property <string> hierarchy-root;
     in property <[TreeNode]> hierarchy-tree: [];
@@ -94,7 +100,16 @@ export component MainWindow inherits Window {
     property <color> text-primary: #000;
     property <color> text-secondary: #666;
     property <color> text-tertiary: #999;
-    property <color> text-error: #d00;
+    property <color> text-danger: #d00;
+
+    // Semantic colors
+    property <color> text-success: #0f5132;
+    property <color> text-info: #055160;
+    property <color> text-warning: #664d03;
+    property <color> bg-success: #d1e7dd;
+    property <color> bg-info: #cff4fc;
+    property <color> bg-warning: #fff3cd;
+    property <color> bg-danger: #f8d7da;
 
     min-width: 1000px;
     min-height: 700px;
@@ -111,7 +126,14 @@ export component MainWindow inherits Window {
             text-primary: #ffffff;
             text-secondary: #cccccc;
             text-tertiary: #888888;
-            text-error: #ff6b6b;
+            text-danger: #ff6b6b;
+            text-success: #75b798;
+            text-info: #6edff6;
+            text-warning: #ffda6a;
+            bg-success: #0f5132;
+            bg-info: #055160;
+            bg-warning: #664d03;
+            bg-danger: #842029;
         }
     ]
 
@@ -443,7 +465,7 @@ export component MainWindow inherits Window {
 
                                 Text {
                                     text: root.validation-error;
-                                    color: root.text-error;
+                                    color: root.text-danger;
                                     font-weight: 700;
                                     wrap: word-wrap;
                                 }
@@ -544,7 +566,7 @@ export component MainWindow inherits Window {
 
                                 Text {
                                     text: root.validation-error;
-                                    color: root.text-error;
+                                    color: root.text-danger;
                                     font-weight: 700;
                                     wrap: word-wrap;
                                 }
@@ -654,7 +676,7 @@ export component MainWindow inherits Window {
 
         // Bottom panel - Facet Filters
         Rectangle {
-            height: 150px;
+            height: 250px;
             background: root.bg-secondary;
             border-width: 1px;
             border-color: root.border-color;
@@ -775,16 +797,25 @@ export component MainWindow inherits Window {
 
         // Status bar
         Rectangle {
-            height: 30px;
-            background: root.bg-statusbar;
+            height: 60px;
+            background: root.status.level == StatusLevel.success ? root.bg-success :
+                       root.status.level == StatusLevel.info ? root.bg-info :
+                       root.status.level == StatusLevel.warning ? root.bg-warning :
+                       root.status.level == StatusLevel.danger ? root.bg-danger :
+                       root.bg-statusbar;
 
             HorizontalBox {
                 padding: 8px;
 
                 Text {
-                    text: root.status-message;
+                    text: root.status.text;
                     vertical-alignment: center;
-                    color: root.text-primary;
+                    color: root.status.level == StatusLevel.success ? root.text-success :
+                           root.status.level == StatusLevel.info ? root.text-info :
+                           root.status.level == StatusLevel.warning ? root.text-warning :
+                           root.status.level == StatusLevel.danger ? root.text-danger :
+                           root.text-primary;
+                    font-weight: root.status.level != StatusLevel.none ? 700 : 400;
                 }
             }
         }
