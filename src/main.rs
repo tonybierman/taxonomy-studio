@@ -150,6 +150,10 @@ pub fn main() {
                         main_window.set_selected_item_path(SharedString::from(
                             item.classical_path.join(" → ")
                         ));
+
+                        // Format facets
+                        let facets_text = format_facets(&item.facets);
+                        main_window.set_selected_item_facets(SharedString::from(facets_text));
                     }
                 }
             }
@@ -291,6 +295,7 @@ fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
     main_window.set_selected_item_index(-1);
     main_window.set_selected_item_name(SharedString::from(""));
     main_window.set_selected_item_path(SharedString::from(""));
+    main_window.set_selected_item_facets(SharedString::from(""));
 
     if let Some(ref taxonomy) = state.taxonomy {
         // Update taxonomy description
@@ -305,6 +310,10 @@ fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
         // Update hierarchy root
         eprintln!("DEBUG: Setting hierarchy root: '{}'", taxonomy.classical_hierarchy.root);
         main_window.set_hierarchy_root(SharedString::from(&taxonomy.classical_hierarchy.root));
+
+        // Update facet dimensions
+        let facet_dims_text = format_facet_dimensions(&taxonomy.faceted_dimensions);
+        main_window.set_facet_dimensions_text(SharedString::from(facet_dims_text));
 
         // Update items list
         if let Some(ref items) = taxonomy.example_items {
@@ -327,7 +336,44 @@ fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
         // Clear UI
         main_window.set_taxonomy_description(SharedString::from(""));
         main_window.set_hierarchy_root(SharedString::from(""));
+        main_window.set_facet_dimensions_text(SharedString::from(""));
         let empty_model = Rc::new(VecModel::<StandardListViewItem>::default());
         main_window.set_items_list(empty_model.into());
     }
+}
+
+/// Format facets HashMap into a displayable string
+fn format_facets(facets: &std::collections::HashMap<String, serde_json::Value>) -> String {
+    let mut facet_lines: Vec<String> = facets
+        .iter()
+        .map(|(key, value)| {
+            let value_str = match value {
+                serde_json::Value::String(s) => s.clone(),
+                serde_json::Value::Array(arr) => {
+                    arr.iter()
+                        .filter_map(|v| v.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                }
+                _ => value.to_string(),
+            };
+            format!("• {}: {}", key, value_str)
+        })
+        .collect();
+
+    facet_lines.sort();
+    facet_lines.join("\n")
+}
+
+/// Format facet dimensions into a displayable string
+fn format_facet_dimensions(dimensions: &std::collections::HashMap<String, Vec<String>>) -> String {
+    let mut dim_lines: Vec<String> = dimensions
+        .iter()
+        .map(|(key, values)| {
+            format!("{}: {}", key, values.join(", "))
+        })
+        .collect();
+
+    dim_lines.sort();
+    dim_lines.join(" • ")
 }

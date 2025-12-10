@@ -8,11 +8,13 @@ export component MainWindow inherits Window {
     in property <string> taxonomy-description;
     in property <string> hierarchy-root;
     in property <[StandardListViewItem]> items-list;
+    in property <string> facet-dimensions-text;
 
     // Selected item properties
     in-out property <int> selected-item-index: -1;
     in property <string> selected-item-name;
     in property <string> selected-item-path;
+    in property <string> selected-item-facets;
 
     // File operation callbacks
     callback file-open();
@@ -261,6 +263,28 @@ export component MainWindow inherits Window {
                                 background: #ddd;
                             }
 
+                            // Facets
+                            if root.selected-item-facets != "" : VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: "Facets:";
+                                    font-size: 10px;
+                                    color: #666;
+                                }
+
+                                Text {
+                                    text: root.selected-item-facets;
+                                    wrap: word-wrap;
+                                    color: #000;
+                                }
+                            }
+
+                            Rectangle {
+                                height: 1px;
+                                background: #ddd;
+                            }
+
                             Text {
                                 text: "Full editing will be implemented in Phase 6";
                                 font-size: 11px;
@@ -310,13 +334,20 @@ export component MainWindow inherits Window {
                 }
 
                 // Panel content
-                HorizontalBox {
-                    padding: 12px;
+                ScrollView {
+                    VerticalBox {
+                        padding: 12px;
 
-                    Text {
-                        text: "Facet filtering will be implemented in Phase 5";
-                        color: #999;
-                        vertical-alignment: center;
+                        if root.facet-dimensions-text != "" : Text {
+                            text: root.facet-dimensions-text;
+                            color: #ccc;
+                            wrap: word-wrap;
+                        }
+
+                        if root.facet-dimensions-text == "" : Text {
+                            text: "Facet filtering will be implemented in Phase 5";
+                            color: #999;
+                        }
                     }
                 }
             }
