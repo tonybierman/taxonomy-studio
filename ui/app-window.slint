@@ -720,39 +720,43 @@ export component MainWindow inherits Window {
                         padding: 12px;
                         spacing: 12px;
 
-                        // Genus filter
-                        if root.taxonomy-description != "" : VerticalBox {
-                            spacing: 4px;
+                        HorizontalBox {
+                            // Genus filter
+                            if root.taxonomy-description != "" : VerticalBox {
+                                spacing: 4px;
 
-                            Text {
-                                text: "Filter by Genus (comma-separated):";
-                                font-size: 11px;
-                                font-weight: 600;
-                                color: root.text-primary;
+                                Text {
+                                    text: "Filter by Genus (comma-separated):";
+                                    font-size: 11px;
+                                    font-weight: 600;
+                                    color: root.text-primary;
+                                }
+
+                                LineEdit {
+                                    text <=> root.genus-filter-text;
+                                    placeholder-text: "e.g., Coffee, Tea";
+                                }
                             }
 
-                            LineEdit {
-                                text <=> root.genus-filter-text;
-                                placeholder-text: "e.g., Coffee, Tea";
+                            // Facet filter
+                            if root.taxonomy-description != "" : VerticalBox {
+                                spacing: 4px;
+
+                                Text {
+                                    text: "Filter by Facets (comma-separated, format: name=value):";
+                                    font-size: 11px;
+                                    font-weight: 600;
+                                    color: root.text-primary;
+                                }
+
+                                LineEdit {
+                                    text <=> root.facet-filter-text;
+                                    placeholder-text: "e.g., temperature=hot, caffeine_content=high";
+                                }
                             }
+                        
                         }
 
-                        // Facet filter
-                        if root.taxonomy-description != "" : VerticalBox {
-                            spacing: 4px;
-
-                            Text {
-                                text: "Filter by Facets (comma-separated, format: name=value):";
-                                font-size: 11px;
-                                font-weight: 600;
-                                color: root.text-primary;
-                            }
-
-                            LineEdit {
-                                text <=> root.facet-filter-text;
-                                placeholder-text: "e.g., temperature=hot, caffeine_content=high";
-                            }
-                        }
 
                         // Active filters display
                         if root.active-filters-text != "" : VerticalBox {
