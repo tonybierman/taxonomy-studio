@@ -1,4 +1,6 @@
 mod errors;
+mod state;
+mod ui;
 
 use clap::Parser;
 use slint::{ComponentHandle, Model, SharedString, StandardListViewItem, VecModel};
@@ -8,66 +10,13 @@ use std::rc::Rc;
 use taxstud_core::*;
 
 use errors::{map_file_load_error, map_file_save_error, map_revert_error};
+use ui::{
+    create_facet_inputs, format_facets, hide_confirmation, hide_error, hide_simple_confirmation,
+    refresh_ui_after_state_change, set_status, show_confirmation, show_error,
+    show_simple_confirmation, update_ui_from_state,
+};
 
 slint::slint!(export { MainWindow } from "ui/app-window.slint";);
-
-/// Helper function to set status message with semantic level
-fn set_status(window: &MainWindow, text: impl Into<SharedString>, level: StatusLevel) {
-    window.set_status(StatusMessage {
-        text: text.into(),
-        level,
-    });
-}
-
-/// Helper function to show confirmation dialog
-fn show_confirmation(
-    window: &MainWindow,
-    message: impl Into<SharedString>,
-) {
-    window.set_confirmation_message(message.into());
-    window.set_show_confirmation_dialog(true);
-}
-
-/// Helper function to hide confirmation dialog
-fn hide_confirmation(window: &MainWindow) {
-    window.set_show_confirmation_dialog(false);
-}
-
-/// Helper function to show error dialog
-fn show_error(
-    window: &MainWindow,
-    title: impl Into<SharedString>,
-    message: impl Into<SharedString>,
-    details: impl Into<SharedString>,
-) {
-    window.set_error_title(title.into());
-    window.set_error_message(message.into());
-    window.set_error_details(details.into());
-    window.set_show_error_dialog(true);
-}
-
-/// Helper function to hide error dialog
-fn hide_error(window: &MainWindow) {
-    window.set_show_error_dialog(false);
-}
-
-/// Helper function to show simple confirmation dialog
-fn show_simple_confirmation(
-    window: &MainWindow,
-    title: impl Into<SharedString>,
-    message: impl Into<SharedString>,
-    button_text: impl Into<SharedString>,
-) {
-    window.set_simple_confirmation_title(title.into());
-    window.set_simple_confirmation_message(message.into());
-    window.set_simple_confirmation_button(button_text.into());
-    window.set_show_simple_confirmation(true);
-}
-
-/// Helper function to hide simple confirmation dialog
-fn hide_simple_confirmation(window: &MainWindow) {
-    window.set_show_simple_confirmation(false);
-}
 
 /// TaxStud - Hybrid Taxonomy Management System
 #[derive(Parser, Debug)]
@@ -81,34 +30,34 @@ struct Args {
 
 /// Represents a pending action waiting for confirmation
 #[derive(Debug, Clone)]
-enum PendingAction {
+pub enum PendingAction {
     Open,
     New,
 }
 
 /// Represents an action for simple confirmation dialog
 #[derive(Debug, Clone)]
-enum SimpleConfirmationAction {
+pub enum SimpleConfirmationAction {
     Revert,
 }
 
 /// Application state management
 #[derive(Debug)]
-struct AppState {
+pub struct AppState {
     /// Currently loaded taxonomy
-    taxonomy: Option<HybridTaxonomy>,
+    pub taxonomy: Option<HybridTaxonomy>,
     /// Path to current file
-    current_file: Option<PathBuf>,
+    pub current_file: Option<PathBuf>,
     /// Whether there are unsaved changes
-    dirty: bool,
+    pub dirty: bool,
     /// Currently selected item index
-    selected_item: Option<usize>,
+    pub selected_item: Option<usize>,
     /// Active filters
-    filters: Filters,
+    pub filters: Filters,
     /// Pending action awaiting user confirmation
-    pending_action: Option<PendingAction>,
+    pub pending_action: Option<PendingAction>,
     /// Simple confirmation action
-    simple_confirmation_action: Option<SimpleConfirmationAction>,
+    pub simple_confirmation_action: Option<SimpleConfirmationAction>,
 }
 
 impl AppState {
@@ -1226,184 +1175,4 @@ pub fn main() {
     }
 
     main_window.run().unwrap();
-}
-
-/// Refresh UI after a state-changing operation (edit, create, delete)
-/// Updates window title, refreshes UI from state, and sets status message
-fn refresh_ui_after_state_change(
-    main_window: &MainWindow,
-    state: &Rc<RefCell<AppState>>,
-    status_message: &str,
-    level: StatusLevel,
-) {
-    // Update window title
-    let title = state.borrow().get_window_title();
-    main_window.set_window_title(SharedString::from(title));
-
-    // Refresh the UI
-    update_ui_from_state(main_window, &state.borrow());
-
-    // Set status
-    set_status(main_window, status_message, level);
-}
-
-/// Update the UI from the current application state
-fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
-    // Clear selected item
-    main_window.set_selected_item_index(-1);
-    main_window.set_selected_item_name(SharedString::from(""));
-    main_window.set_selected_item_path(SharedString::from(""));
-    main_window.set_selected_item_facets(SharedString::from(""));
-
-    if let Some(ref taxonomy) = state.taxonomy {
-        // Update taxonomy description
-        let description = taxonomy.taxonomy_description
-            .as_deref()
-            .unwrap_or("");
-
-        eprintln!("DEBUG: Setting taxonomy description: '{}'", description);
-        main_window.set_taxonomy_description(SharedString::from(description));
-
-        // Update hierarchy root
-        eprintln!("DEBUG: Setting hierarchy root: '{}'", taxonomy.classical_hierarchy.root);
-        main_window.set_hierarchy_root(SharedString::from(&taxonomy.classical_hierarchy.root));
-
-        // Update hierarchy tree
-        let tree_nodes = flatten_hierarchy(&taxonomy.classical_hierarchy);
-        let tree_model = Rc::new(VecModel::from(tree_nodes));
-        main_window.set_hierarchy_tree(tree_model.into());
-
-        // Update facet dimensions
-        let facet_dims_text = format_facet_dimensions(&taxonomy.faceted_dimensions);
-        main_window.set_facet_dimensions_text(SharedString::from(facet_dims_text));
-
-        // Update items list
-        if let Some(ref items) = taxonomy.example_items {
-            eprintln!("DEBUG: Loading {} items", items.len());
-            for (i, item) in items.iter().enumerate() {
-                eprintln!("DEBUG: Item {}: '{}'", i, item.name);
-            }
-
-            let items_model = Rc::new(VecModel::from(
-                items.iter().map(|item| {
-                    StandardListViewItem::from(SharedString::from(&item.name))
-                }).collect::<Vec<_>>()
-            ));
-            main_window.set_items_list(items_model.into());
-        } else {
-            let empty_model = Rc::new(VecModel::<StandardListViewItem>::default());
-            main_window.set_items_list(empty_model.into());
-        }
-    } else {
-        // Clear UI
-        main_window.set_taxonomy_description(SharedString::from(""));
-        main_window.set_hierarchy_root(SharedString::from(""));
-        let empty_tree_model = Rc::new(VecModel::<TreeNode>::default());
-        main_window.set_hierarchy_tree(empty_tree_model.into());
-        main_window.set_facet_dimensions_text(SharedString::from(""));
-        let empty_model = Rc::new(VecModel::<StandardListViewItem>::default());
-        main_window.set_items_list(empty_model.into());
-    }
-}
-
-/// Format facets HashMap into a displayable string
-fn format_facets(facets: &std::collections::HashMap<String, serde_json::Value>) -> String {
-    let mut facet_lines: Vec<String> = facets
-        .iter()
-        .map(|(key, value)| {
-            let value_str = match value {
-                serde_json::Value::String(s) => s.clone(),
-                serde_json::Value::Array(arr) => {
-                    arr.iter()
-                        .filter_map(|v| v.as_str())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                }
-                _ => value.to_string(),
-            };
-            format!("• {}: {}", key, value_str)
-        })
-        .collect();
-
-    facet_lines.sort();
-    facet_lines.join("\n")
-}
-
-/// Format facet dimensions into a displayable string
-fn format_facet_dimensions(dimensions: &std::collections::HashMap<String, Vec<String>>) -> String {
-    let mut dim_lines: Vec<String> = dimensions
-        .iter()
-        .map(|(key, values)| {
-            format!("{}: {}", key, values.join(", "))
-        })
-        .collect();
-
-    dim_lines.sort();
-    dim_lines.join(" • ")
-}
-
-/// Create facet input list from taxonomy dimensions and current facet values
-fn create_facet_inputs(
-    dimensions: &std::collections::HashMap<String, Vec<String>>,
-    facets: &std::collections::HashMap<String, serde_json::Value>
-) -> Vec<FacetInput> {
-    let mut facet_inputs: Vec<FacetInput> = dimensions
-        .keys()
-        .map(|key| {
-            let value = facets.get(key).map(|v| {
-                match v {
-                    serde_json::Value::String(s) => s.clone(),
-                    serde_json::Value::Array(arr) => {
-                        arr.iter()
-                            .filter_map(|v| v.as_str())
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    }
-                    _ => v.to_string(),
-                }
-            }).unwrap_or_default();
-
-            FacetInput {
-                name: SharedString::from(key.as_str()),
-                value: SharedString::from(value),
-            }
-        })
-        .collect();
-
-    facet_inputs.sort_by(|a, b| a.name.cmp(&b.name));
-    facet_inputs
-}
-
-/// Flatten hierarchy tree into a list of tree nodes with indentation levels
-fn flatten_hierarchy(hierarchy: &ClassicalHierarchy) -> Vec<TreeNode> {
-    let mut nodes = Vec::new();
-
-    if let Some(ref children) = hierarchy.children {
-        for child in children {
-            flatten_node(child, 0, &mut nodes);
-        }
-    }
-
-    nodes
-}
-
-/// Recursively flatten a hierarchy node and its children
-fn flatten_node(node: &HierarchyNode, indent_level: i32, nodes: &mut Vec<TreeNode>) {
-    // Format: "species (differentia)"
-    let label = if node.differentia.is_empty() {
-        node.species.clone()
-    } else {
-        format!("{} ({})", node.species, node.differentia)
-    };
-
-    nodes.push(TreeNode {
-        label: SharedString::from(label),
-        indent_level,
-    });
-
-    if let Some(ref children) = node.children {
-        for child in children {
-            flatten_node(child, indent_level + 1, nodes);
-        }
-    }
 }
