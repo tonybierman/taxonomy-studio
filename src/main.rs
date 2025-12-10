@@ -15,6 +15,56 @@ fn set_status(window: &MainWindow, text: impl Into<SharedString>, level: StatusL
     });
 }
 
+/// Helper function to show confirmation dialog
+fn show_confirmation(
+    window: &MainWindow,
+    message: impl Into<SharedString>,
+) {
+    window.set_confirmation_message(message.into());
+    window.set_show_confirmation_dialog(true);
+}
+
+/// Helper function to hide confirmation dialog
+fn hide_confirmation(window: &MainWindow) {
+    window.set_show_confirmation_dialog(false);
+}
+
+/// Helper function to show error dialog
+fn show_error(
+    window: &MainWindow,
+    title: impl Into<SharedString>,
+    message: impl Into<SharedString>,
+    details: impl Into<SharedString>,
+) {
+    window.set_error_title(title.into());
+    window.set_error_message(message.into());
+    window.set_error_details(details.into());
+    window.set_show_error_dialog(true);
+}
+
+/// Helper function to hide error dialog
+fn hide_error(window: &MainWindow) {
+    window.set_show_error_dialog(false);
+}
+
+/// Helper function to show simple confirmation dialog
+fn show_simple_confirmation(
+    window: &MainWindow,
+    title: impl Into<SharedString>,
+    message: impl Into<SharedString>,
+    button_text: impl Into<SharedString>,
+) {
+    window.set_simple_confirmation_title(title.into());
+    window.set_simple_confirmation_message(message.into());
+    window.set_simple_confirmation_button(button_text.into());
+    window.set_show_simple_confirmation(true);
+}
+
+/// Helper function to hide simple confirmation dialog
+fn hide_simple_confirmation(window: &MainWindow) {
+    window.set_show_simple_confirmation(false);
+}
+
 /// TaxStud - Hybrid Taxonomy Management System
 #[derive(Parser, Debug)]
 #[command(name = "taxstud")]
@@ -23,6 +73,19 @@ struct Args {
     /// Path to taxonomy JSON file to load on startup
     #[arg(value_name = "FILE")]
     file: Option<PathBuf>,
+}
+
+/// Represents a pending action waiting for confirmation
+#[derive(Debug, Clone)]
+enum PendingAction {
+    Open,
+    New,
+}
+
+/// Represents an action for simple confirmation dialog
+#[derive(Debug, Clone)]
+enum SimpleConfirmationAction {
+    Revert,
 }
 
 /// Application state management
@@ -38,6 +101,10 @@ struct AppState {
     selected_item: Option<usize>,
     /// Active filters
     filters: Filters,
+    /// Pending action awaiting user confirmation
+    pending_action: Option<PendingAction>,
+    /// Simple confirmation action
+    simple_confirmation_action: Option<SimpleConfirmationAction>,
 }
 
 impl AppState {
@@ -51,6 +118,8 @@ impl AppState {
                 genera: Vec::new(),
                 facets: std::collections::HashMap::new(),
             },
+            pending_action: None,
+            simple_confirmation_action: None,
         }
     }
 
@@ -230,37 +299,60 @@ pub fn main() {
 
         main_window.on_file_open(move || {
             let main_window = main_window_weak.unwrap();
-            let state = state.clone();
 
-            slint::spawn_local(async move {
-                if let Some(file) = rfd::AsyncFileDialog::new()
-                    .add_filter("JSON", &["json"])
-                    .set_title("Open Taxonomy File")
-                    .pick_file()
-                    .await
-                {
-                    let path = file.path().to_path_buf();
+            // Check for unsaved changes
+            if state.borrow().dirty {
+                // Store pending action and show confirmation dialog
+                state.borrow_mut().pending_action = Some(PendingAction::Open);
+                show_confirmation(
+                    &main_window,
+                    "You have unsaved changes. Do you want to save before opening another file?",
+                );
+            } else {
+                // No unsaved changes, proceed with open
+                let state = state.clone();
+                slint::spawn_local(async move {
+                    if let Some(file) = rfd::AsyncFileDialog::new()
+                        .add_filter("JSON", &["json"])
+                        .set_title("Open Taxonomy File")
+                        .pick_file()
+                        .await
+                    {
+                        let path = file.path().to_path_buf();
 
-                    // Load the file (borrow mutably, then drop the borrow)
-                    let load_result = state.borrow_mut().load_from_file(path);
+                        // Load the file (borrow mutably, then drop the borrow)
+                        let load_result = state.borrow_mut().load_from_file(path.clone());
 
-                    match load_result {
-                        Ok(_) => {
-                            // Update window title (borrow immutably)
-                            let title = state.borrow().get_window_title();
-                            main_window.set_window_title(SharedString::from(title));
+                        match load_result {
+                            Ok(_) => {
+                                // Update window title (borrow immutably)
+                                let title = state.borrow().get_window_title();
+                                main_window.set_window_title(SharedString::from(title));
 
-                            // Update UI with loaded data (borrow immutably)
-                            update_ui_from_state(&main_window, &state.borrow());
+                                // Update UI with loaded data (borrow immutably)
+                                update_ui_from_state(&main_window, &state.borrow());
 
-                            set_status(&main_window, "File loaded successfully", StatusLevel::Success);
-                        }
-                        Err(e) => {
-                            set_status(&main_window, format!("Error loading file: {}", e), StatusLevel::Danger);
+                                set_status(&main_window, "File loaded successfully", StatusLevel::Success);
+                            }
+                            Err(e) => {
+                                // Show enhanced error dialog
+                                let error_string = e.to_string();
+                                let (message, details) = if error_string.contains("Validation failed") {
+                                    ("The taxonomy file has validation errors.", error_string)
+                                } else if error_string.contains("No such file") {
+                                    ("The file could not be found.", format!("Path: {}\n\nPlease verify the file exists and you have permission to read it.", path.display()))
+                                } else if error_string.contains("Permission denied") {
+                                    ("Permission denied.", format!("You don't have permission to read this file:\n{}", path.display()))
+                                } else {
+                                    ("Failed to load taxonomy file.", error_string)
+                                };
+
+                                show_error(&main_window, "Error Loading File", message, details);
+                            }
                         }
                     }
-                }
-            }).unwrap();
+                }).unwrap();
+            }
         });
     }
 
@@ -281,7 +373,19 @@ pub fn main() {
                     set_status(&main_window, "File saved successfully", StatusLevel::Success);
                 }
                 Err(e) => {
-                    set_status(&main_window, format!("Error saving file: {}", e), StatusLevel::Danger);
+                    // Show enhanced error dialog
+                    let error_string = e.to_string();
+                    let (message, details) = if error_string.contains("No file path set") {
+                        ("No file path is set for this taxonomy.", "Please use 'Save As...' to choose a location for this file.".to_string())
+                    } else if error_string.contains("Permission denied") {
+                        ("Permission denied.", "You don't have permission to write to this file.".to_string())
+                    } else if error_string.contains("No space left") {
+                        ("Disk full.", "There is no space left on the device to save the file.".to_string())
+                    } else {
+                        ("Failed to save taxonomy file.", error_string)
+                    };
+
+                    show_error(&main_window, "Error Saving File", message, details);
                 }
             }
         });
@@ -305,7 +409,7 @@ pub fn main() {
                 {
                     let path = file.path().to_path_buf();
 
-                    let save_result = state.borrow_mut().save_as(path);
+                    let save_result = state.borrow_mut().save_as(path.clone());
 
                     match save_result {
                         Ok(_) => {
@@ -314,7 +418,17 @@ pub fn main() {
                             set_status(&main_window, "File saved successfully", StatusLevel::Success);
                         }
                         Err(e) => {
-                            set_status(&main_window, format!("Error saving file: {}", e), StatusLevel::Danger);
+                            // Show enhanced error dialog
+                            let error_string = e.to_string();
+                            let (message, details) = if error_string.contains("Permission denied") {
+                                ("Permission denied.", format!("You don't have permission to write to:\n{}", path.display()))
+                            } else if error_string.contains("No space left") {
+                                ("Disk full.", "There is no space left on the device to save the file.".to_string())
+                            } else {
+                                ("Failed to save taxonomy file.", error_string)
+                            };
+
+                            show_error(&main_window, "Error Saving File", message, details);
                         }
                     }
                 }
@@ -330,16 +444,62 @@ pub fn main() {
         main_window.on_file_new(move || {
             let main_window = main_window_weak.unwrap();
 
-            // Create new (drops mutable borrow immediately)
-            state.borrow_mut().create_new();
+            // Check for unsaved changes
+            if state.borrow().dirty {
+                // Store pending action and show confirmation dialog
+                state.borrow_mut().pending_action = Some(PendingAction::New);
+                show_confirmation(
+                    &main_window,
+                    "You have unsaved changes. Do you want to save before creating a new taxonomy?",
+                );
+            } else {
+                // No unsaved changes, proceed with creating new taxonomy
+                // Create new (drops mutable borrow immediately)
+                state.borrow_mut().create_new();
 
-            // Now borrow immutably
-            let title = state.borrow().get_window_title();
-            main_window.set_window_title(SharedString::from(title));
+                // Now borrow immutably
+                let title = state.borrow().get_window_title();
+                main_window.set_window_title(SharedString::from(title));
 
-            update_ui_from_state(&main_window, &state.borrow());
+                update_ui_from_state(&main_window, &state.borrow());
 
-            set_status(&main_window, "New taxonomy created", StatusLevel::Success);
+                set_status(&main_window, "New taxonomy created", StatusLevel::Success);
+            }
+        });
+    }
+
+    // File -> Revert to Saved
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_file_revert(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Check if we have a file to revert to
+            let can_revert = {
+                let state_borrow = state.borrow();
+                state_borrow.current_file.is_some() && state_borrow.dirty
+            };
+
+            if can_revert {
+                // Show confirmation dialog
+                state.borrow_mut().simple_confirmation_action = Some(SimpleConfirmationAction::Revert);
+                show_simple_confirmation(
+                    &main_window,
+                    "Revert to Saved",
+                    "Are you sure you want to revert to the last saved version? All unsaved changes will be lost.",
+                    "Revert",
+                );
+            } else {
+                // Either no file or no changes
+                let state_borrow = state.borrow();
+                if state_borrow.current_file.is_none() {
+                    set_status(&main_window, "No file to revert to", StatusLevel::Warning);
+                } else {
+                    set_status(&main_window, "No unsaved changes to revert", StatusLevel::Info);
+                }
+            }
         });
     }
 
@@ -857,6 +1017,268 @@ pub fn main() {
                     }
                 }
             }
+        });
+    }
+
+    // Confirmation Dialog - Save
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_confirmation_save(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Save the file first
+            let save_result = state.borrow_mut().save();
+
+            match save_result {
+                Ok(_) => {
+                    // Update window title
+                    let title = state.borrow().get_window_title();
+                    main_window.set_window_title(SharedString::from(title));
+
+                    // Hide confirmation dialog
+                    hide_confirmation(&main_window);
+
+                    // Now proceed with the pending action
+                    if let Some(action) = state.borrow_mut().pending_action.take() {
+                        match action {
+                            PendingAction::Open => {
+                                // Trigger file open
+                                let state = state.clone();
+                                slint::spawn_local(async move {
+                                    if let Some(file) = rfd::AsyncFileDialog::new()
+                                        .add_filter("JSON", &["json"])
+                                        .set_title("Open Taxonomy File")
+                                        .pick_file()
+                                        .await
+                                    {
+                                        let path = file.path().to_path_buf();
+                                        let load_result = state.borrow_mut().load_from_file(path.clone());
+
+                                        match load_result {
+                                            Ok(_) => {
+                                                let title = state.borrow().get_window_title();
+                                                main_window.set_window_title(SharedString::from(title));
+                                                update_ui_from_state(&main_window, &state.borrow());
+                                                set_status(&main_window, "File loaded successfully", StatusLevel::Success);
+                                            }
+                                            Err(e) => {
+                                                let error_string = e.to_string();
+                                                let (message, details) = if error_string.contains("Validation failed") {
+                                                    ("The taxonomy file has validation errors.", error_string)
+                                                } else if error_string.contains("No such file") {
+                                                    ("The file could not be found.", format!("Path: {}\n\nPlease verify the file exists and you have permission to read it.", path.display()))
+                                                } else if error_string.contains("Permission denied") {
+                                                    ("Permission denied.", format!("You don't have permission to read this file:\n{}", path.display()))
+                                                } else {
+                                                    ("Failed to load taxonomy file.", error_string)
+                                                };
+                                                show_error(&main_window, "Error Loading File", message, details);
+                                            }
+                                        }
+                                    }
+                                }).unwrap();
+                            }
+                            PendingAction::New => {
+                                // Create new taxonomy
+                                state.borrow_mut().create_new();
+                                let title = state.borrow().get_window_title();
+                                main_window.set_window_title(SharedString::from(title));
+                                update_ui_from_state(&main_window, &state.borrow());
+                                set_status(&main_window, "New taxonomy created", StatusLevel::Success);
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    // Hide confirmation dialog
+                    hide_confirmation(&main_window);
+
+                    // Show error
+                    let error_string = e.to_string();
+                    let (message, details) = if error_string.contains("No file path set") {
+                        ("No file path is set for this taxonomy.", "Please use 'Save As...' to choose a location for this file.".to_string())
+                    } else {
+                        ("Failed to save taxonomy file.", error_string)
+                    };
+                    show_error(&main_window, "Error Saving File", message, details);
+
+                    // Clear pending action since we couldn't save
+                    state.borrow_mut().pending_action = None;
+                }
+            }
+        });
+    }
+
+    // Confirmation Dialog - Don't Save
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_confirmation_dont_save(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Hide confirmation dialog
+            hide_confirmation(&main_window);
+
+            // Proceed with the pending action without saving
+            if let Some(action) = state.borrow_mut().pending_action.take() {
+                match action {
+                    PendingAction::Open => {
+                        // Trigger file open
+                        let state = state.clone();
+                        slint::spawn_local(async move {
+                            if let Some(file) = rfd::AsyncFileDialog::new()
+                                .add_filter("JSON", &["json"])
+                                .set_title("Open Taxonomy File")
+                                .pick_file()
+                                .await
+                            {
+                                let path = file.path().to_path_buf();
+                                let load_result = state.borrow_mut().load_from_file(path.clone());
+
+                                match load_result {
+                                    Ok(_) => {
+                                        let title = state.borrow().get_window_title();
+                                        main_window.set_window_title(SharedString::from(title));
+                                        update_ui_from_state(&main_window, &state.borrow());
+                                        set_status(&main_window, "File loaded successfully", StatusLevel::Success);
+                                    }
+                                    Err(e) => {
+                                        let error_string = e.to_string();
+                                        let (message, details) = if error_string.contains("Validation failed") {
+                                            ("The taxonomy file has validation errors.", error_string)
+                                        } else if error_string.contains("No such file") {
+                                            ("The file could not be found.", format!("Path: {}\n\nPlease verify the file exists and you have permission to read it.", path.display()))
+                                        } else if error_string.contains("Permission denied") {
+                                            ("Permission denied.", format!("You don't have permission to read this file:\n{}", path.display()))
+                                        } else {
+                                            ("Failed to load taxonomy file.", error_string)
+                                        };
+                                        show_error(&main_window, "Error Loading File", message, details);
+                                    }
+                                }
+                            }
+                        }).unwrap();
+                    }
+                    PendingAction::New => {
+                        // Create new taxonomy
+                        state.borrow_mut().create_new();
+                        let title = state.borrow().get_window_title();
+                        main_window.set_window_title(SharedString::from(title));
+                        update_ui_from_state(&main_window, &state.borrow());
+                        set_status(&main_window, "New taxonomy created", StatusLevel::Success);
+                    }
+                }
+            }
+        });
+    }
+
+    // Confirmation Dialog - Cancel
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_confirmation_cancel(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Hide confirmation dialog
+            hide_confirmation(&main_window);
+
+            // Clear pending action
+            state.borrow_mut().pending_action = None;
+
+            set_status(&main_window, "Action cancelled", StatusLevel::Info);
+        });
+    }
+
+    // Error Dialog - Close
+    {
+        let main_window_weak = main_window.as_weak();
+
+        main_window.on_error_dialog_close(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Hide error dialog
+            hide_error(&main_window);
+        });
+    }
+
+    // Simple Confirmation - OK
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_simple_confirmation_ok(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Hide confirmation dialog
+            hide_simple_confirmation(&main_window);
+
+            // Get the action and drop the borrow immediately
+            let action = state.borrow_mut().simple_confirmation_action.take();
+
+            // Execute the action
+            if let Some(action) = action {
+                match action {
+                    SimpleConfirmationAction::Revert => {
+                        // Get the file path (borrow immutably, then drop)
+                        let path = state.borrow().current_file.clone();
+
+                        if let Some(file_path) = path {
+                            // Now borrow mutably to reload
+                            let load_result = state.borrow_mut().load_from_file(file_path.clone());
+
+                            match load_result {
+                                Ok(_) => {
+                                    // Update window title
+                                    let title = state.borrow().get_window_title();
+                                    main_window.set_window_title(SharedString::from(title));
+
+                                    // Update UI with loaded data
+                                    update_ui_from_state(&main_window, &state.borrow());
+
+                                    set_status(&main_window, "Reverted to saved version", StatusLevel::Success);
+                                }
+                                Err(e) => {
+                                    // Show error
+                                    let error_string = e.to_string();
+                                    let (message, details) = if error_string.contains("Validation failed") {
+                                        ("The taxonomy file has validation errors.", error_string)
+                                    } else if error_string.contains("No such file") {
+                                        ("The file could not be found.", format!("Path: {}\n\nThe file may have been moved or deleted.", file_path.display()))
+                                    } else if error_string.contains("Permission denied") {
+                                        ("Permission denied.", format!("You don't have permission to read this file:\n{}", file_path.display()))
+                                    } else {
+                                        ("Failed to reload taxonomy file.", error_string)
+                                    };
+
+                                    show_error(&main_window, "Error Reverting File", message, details);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Simple Confirmation - Cancel
+    {
+        let main_window_weak = main_window.as_weak();
+        let state = state.clone();
+
+        main_window.on_simple_confirmation_cancel(move || {
+            let main_window = main_window_weak.unwrap();
+
+            // Hide confirmation dialog
+            hide_simple_confirmation(&main_window);
+
+            // Clear action
+            state.borrow_mut().simple_confirmation_action = None;
+
+            set_status(&main_window, "Action cancelled", StatusLevel::Info);
         });
     }
 
