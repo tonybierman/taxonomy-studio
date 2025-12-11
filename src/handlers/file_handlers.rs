@@ -18,6 +18,7 @@ pub fn register_file_handlers(
     register_file_save_as(window, app_state);
     register_file_new(window, app_state, ui_state);
     register_file_revert(window, app_state, ui_state);
+    register_file_exit(window, app_state, ui_state);
 }
 
 /// Register File -> Open handler
@@ -165,6 +166,35 @@ fn register_file_revert(
             } else {
                 set_status(&main_window, "No unsaved changes", StatusLevel::Info);
             }
+        }
+    });
+}
+
+/// Register File -> Exit handler
+fn register_file_exit(
+    window: &MainWindow,
+    app_state: &Rc<RefCell<AppState>>,
+    ui_state: &Rc<RefCell<UiState>>,
+) {
+    let main_window_weak = window.as_weak();
+    let app_state = app_state.clone();
+    let ui_state = ui_state.clone();
+
+    window.on_file_exit(move || {
+        let main_window = main_window_weak.unwrap();
+
+        // Check for unsaved changes
+        if app_state.borrow().dirty {
+            // Store pending action and show confirmation dialog
+            ui_state.borrow_mut().pending_action = Some(PendingAction::Exit);
+            show_confirmation(
+                &main_window,
+                "You have unsaved changes. Do you want to save before exiting?",
+            );
+        } else {
+            // No unsaved changes, exit immediately
+            let _ = main_window.hide();
+            let _ = slint::quit_event_loop();
         }
     });
 }

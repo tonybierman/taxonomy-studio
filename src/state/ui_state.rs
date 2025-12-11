@@ -3,6 +3,7 @@
 pub enum PendingAction {
     Open,
     New,
+    Exit,
 }
 
 /// Represents an action for simple confirmation dialog

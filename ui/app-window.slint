@@ -75,6 +75,7 @@ export component MainWindow inherits Window {
     callback file-save-as();
     callback file-new();
     callback file-revert();
+    callback file-exit();
 
     // Item selection callback
     callback item-selected(int);
@@ -201,6 +202,11 @@ export component MainWindow inherits Window {
             MenuItem {
                 title: "Save As...";
                 activated => { root.file-save-as(); }
+            }
+
+            MenuItem {
+                title: "Exit";
+                activated => { root.file-exit(); }
             }
         }
 

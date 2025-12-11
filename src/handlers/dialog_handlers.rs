@@ -203,5 +203,10 @@ fn execute_pending_action(
             update_ui_from_state(main_window, app_state);
             set_status(main_window, "New taxonomy created", StatusLevel::Success);
         }
+        PendingAction::Exit => {
+            // Exit the application
+            let _ = main_window.hide();
+            let _ = slint::quit_event_loop();
+        }
     }
 }
