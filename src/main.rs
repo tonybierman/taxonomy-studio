@@ -47,7 +47,7 @@ pub fn main() {
                 main_window.set_window_title(SharedString::from(title));
 
                 // Update UI with loaded data
-                update_ui_from_state(&main_window, &app_state.borrow());
+                update_ui_from_state(&main_window, &app_state);
 
                 set_status(
                     &main_window,

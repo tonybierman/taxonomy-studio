@@ -20,6 +20,10 @@ pub struct AppState {
     pub selected_item: Option<usize>,
     /// Active filters
     pub filters: Filters,
+    /// Active sort field (e.g., "name")
+    pub sort_by: Option<String>,
+    /// Currently displayed items (after filtering and sorting) - for index mapping
+    pub displayed_items: Vec<Item>,
 }
 
 impl AppState {
@@ -35,6 +39,8 @@ impl AppState {
                 genera: Vec::new(),
                 facets: HashMap::new(),
             },
+            sort_by: None,
+            displayed_items: Vec::new(),
         }
     }
 

@@ -1,6 +1,7 @@
 use slint::{SharedString, StandardListViewItem, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
+use taxstud_core::{matches_filters, sort_items};
 
 use crate::state::AppState;
 use crate::ui::dialogs::set_status;
@@ -21,22 +22,24 @@ pub fn refresh_ui_after_state_change(
     main_window.set_window_title(SharedString::from(title));
 
     // Refresh the UI
-    update_ui_from_state(main_window, &state.borrow());
+    update_ui_from_state(main_window, state);
 
     // Set status
     set_status(main_window, status_message, level);
 }
 
 /// Update the UI from the current application state
-pub fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
+pub fn update_ui_from_state(main_window: &MainWindow, state: &Rc<RefCell<AppState>>) {
     // Clear selected item
     main_window.set_selected_item_index(-1);
     main_window.set_selected_item_name(SharedString::from(""));
     main_window.set_selected_item_path(SharedString::from(""));
     main_window.set_selected_item_facets(SharedString::from(""));
 
+    let state_borrow = state.borrow();
+
     // Update from schema (if present)
-    if let Some(ref schema) = state.schema {
+    if let Some(ref schema) = state_borrow.schema {
         // Update taxonomy description
         let description = schema.description.as_deref().unwrap_or("");
         main_window.set_taxonomy_description(SharedString::from(description));
@@ -62,15 +65,37 @@ pub fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
     }
 
     // Update items from data (if present)
-    if let Some(ref data) = state.data {
+    if let Some(ref data) = state_borrow.data {
+        // Start with all items
+        let mut items = data.items.clone();
+
+        // Apply filters if any are active
+        let has_active_filters = !state_borrow.filters.genera.is_empty() || !state_borrow.filters.facets.is_empty();
+        if has_active_filters {
+            items.retain(|item| matches_filters(item, &state_borrow.filters));
+        }
+
+        // Apply sorting if active
+        if let Some(ref sort_field) = state_borrow.sort_by {
+            sort_items(&mut items, sort_field);
+        }
+
+        // Store displayed items for index mapping
+        drop(state_borrow);
+        state.borrow_mut().displayed_items = items.clone();
+
+        // Update UI with processed items
         let items_model = Rc::new(VecModel::from(
-            data.items
+            items
                 .iter()
                 .map(|item| StandardListViewItem::from(SharedString::from(&item.name)))
                 .collect::<Vec<_>>(),
         ));
         main_window.set_items_list(items_model.into());
     } else {
+        drop(state_borrow);
+        state.borrow_mut().displayed_items = Vec::new();
+
         let empty_model = Rc::new(VecModel::<StandardListViewItem>::default());
         main_window.set_items_list(empty_model.into());
     }

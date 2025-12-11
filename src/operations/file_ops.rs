@@ -44,7 +44,7 @@ impl<'a> FileOperations<'a> {
                 self.window.set_window_title(SharedString::from(title));
 
                 // Update UI with loaded data (borrow immutably)
-                update_ui_from_state(self.window, &self.state.borrow());
+                update_ui_from_state(self.window, self.state);
 
                 set_status(
                     self.window,
@@ -133,7 +133,7 @@ impl<'a> FileOperations<'a> {
                     self.window.set_window_title(SharedString::from(title));
 
                     // Update UI with loaded data
-                    update_ui_from_state(self.window, &self.state.borrow());
+                    update_ui_from_state(self.window, self.state);
 
                     set_status(
                         self.window,

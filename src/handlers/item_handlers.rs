@@ -7,7 +7,6 @@ use crate::operations::{collect_facets, validate_item_input};
 use crate::state::AppState;
 use crate::ui::{
     create_facet_inputs, format_facets, refresh_ui_after_state_change, set_status,
-    update_ui_from_state,
 };
 use crate::{MainWindow, StatusLevel};
 
@@ -32,20 +31,19 @@ fn register_item_selected(window: &MainWindow, app_state: &Rc<RefCell<AppState>>
         let main_window = main_window_weak.unwrap();
         let state_borrow = app_state.borrow();
 
-        if let Some(ref data) = state_borrow.data {
-            if index >= 0 && (index as usize) < data.items.len() {
-                let item = &data.items[index as usize];
+        // Use displayed_items which reflects the current sort/filter state
+        if index >= 0 && (index as usize) < state_borrow.displayed_items.len() {
+            let item = &state_borrow.displayed_items[index as usize];
 
-                // Update selected item properties
-                main_window.set_selected_item_name(SharedString::from(&item.name));
-                main_window.set_selected_item_path(SharedString::from(
-                    item.classical_path.join(" → "),
-                ));
+            // Update selected item properties
+            main_window.set_selected_item_name(SharedString::from(&item.name));
+            main_window.set_selected_item_path(SharedString::from(
+                item.classical_path.join(" → "),
+            ));
 
-                // Format facets
-                let facets_text = format_facets(&item.facets);
-                main_window.set_selected_item_facets(SharedString::from(facets_text));
-            }
+            // Format facets
+            let facets_text = format_facets(&item.facets);
+            main_window.set_selected_item_facets(SharedString::from(facets_text));
         }
     });
 }
@@ -59,11 +57,11 @@ fn register_start_edit(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) {
         let main_window = main_window_weak.unwrap();
         let state_borrow = app_state.borrow();
 
-        // Get the currently selected item
-        if let (Some(ref data), Some(ref schema)) = (&state_borrow.data, &state_borrow.schema) {
+        // Get the currently selected item from displayed_items
+        if let Some(ref schema) = state_borrow.schema {
             let selected_idx = main_window.get_selected_item_index();
-            if selected_idx >= 0 && (selected_idx as usize) < data.items.len() {
-                let item = &data.items[selected_idx as usize];
+            if selected_idx >= 0 && (selected_idx as usize) < state_borrow.displayed_items.len() {
+                let item = &state_borrow.displayed_items[selected_idx as usize];
 
                 // Populate edit fields
                 main_window.set_edit_item_name(SharedString::from(&item.name));
@@ -93,6 +91,9 @@ fn register_save_edit(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) {
     window.on_save_edit(move || {
         let main_window = main_window_weak.unwrap();
 
+        // Get the original item name from the selected item (before editing)
+        let original_name = main_window.get_selected_item_name().to_string();
+
         // Get edited values
         let new_name = main_window.get_edit_item_name().to_string();
         let new_path = main_window.get_edit_item_path().to_string();
@@ -110,12 +111,11 @@ fn register_save_edit(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) {
         // Collect facets from inputs using validation module
         let facets_map = collect_facets(&facet_inputs);
 
-        // Update the item in the data
+        // Find and update the item in the data by original name
         let mut state_mut = app_state.borrow_mut();
         if let Some(ref mut data) = state_mut.data {
-            let selected_idx = main_window.get_selected_item_index();
-            if selected_idx >= 0 && (selected_idx as usize) < data.items.len() {
-                let item = &mut data.items[selected_idx as usize];
+            // Find the item by original name
+            if let Some(item) = data.items.iter_mut().find(|i| i.name == original_name) {
                 item.name = validated_name.clone();
                 item.classical_path = classical_path;
                 item.facets = facets_map;
@@ -127,33 +127,10 @@ fn register_save_edit(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) {
                 drop(state_mut);
                 main_window.set_is_editing(false);
 
-                // Update window title
-                let title = app_state.borrow().get_window_title();
-                main_window.set_window_title(SharedString::from(title));
-
-                // Refresh the UI
-                update_ui_from_state(&main_window, &app_state.borrow());
-
-                // Re-select the edited item
-                main_window.set_selected_item_index(selected_idx);
-
-                // Trigger item selection to update details panel
-                let state_borrow = app_state.borrow();
-                if let Some(ref data) = state_borrow.data {
-                    if selected_idx >= 0 && (selected_idx as usize) < data.items.len() {
-                        let item = &data.items[selected_idx as usize];
-                        main_window.set_selected_item_name(SharedString::from(&item.name));
-                        main_window.set_selected_item_path(SharedString::from(
-                            item.classical_path.join(" → "),
-                        ));
-                        let facets_text = format_facets(&item.facets);
-                        main_window
-                            .set_selected_item_facets(SharedString::from(facets_text));
-                    }
-                }
-
-                set_status(
+                // Refresh UI and show success message
+                refresh_ui_after_state_change(
                     &main_window,
+                    &app_state,
                     "Item saved successfully",
                     StatusLevel::Success,
                 );
@@ -287,26 +264,22 @@ fn register_delete_item(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) 
             return;
         }
 
-        // Get item name for confirmation message
+        // Get item name from displayed_items
         let item_name = {
             let state_borrow = app_state.borrow();
-            if let Some(ref data) = state_borrow.data {
-                if (selected_idx as usize) < data.items.len() {
-                    data.items[selected_idx as usize].name.clone()
-                } else {
-                    return;
-                }
+            if (selected_idx as usize) < state_borrow.displayed_items.len() {
+                state_borrow.displayed_items[selected_idx as usize].name.clone()
             } else {
                 return;
             }
         };
 
-        // For now, delete without confirmation (we can add a dialog later)
-        // In a real app, you'd use a confirmation dialog here
+        // Find and delete the item from data by name
         let mut state_mut = app_state.borrow_mut();
         if let Some(ref mut data) = state_mut.data {
-            if (selected_idx as usize) < data.items.len() {
-                data.items.remove(selected_idx as usize);
+            // Find the item position by name
+            if let Some(pos) = data.items.iter().position(|i| i.name == item_name) {
+                data.items.remove(pos);
 
                 // Mark as dirty
                 state_mut.mark_dirty();

@@ -117,7 +117,7 @@ fn register_file_new(
             main_window.set_window_title(SharedString::from(title));
 
             // Update UI with new empty taxonomy (borrow immutably)
-            update_ui_from_state(&main_window, &app_state.borrow());
+            update_ui_from_state(&main_window, &app_state);
 
             set_status(&main_window, "New taxonomy created", StatusLevel::Success);
         }
