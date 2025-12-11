@@ -1,4 +1,5 @@
 mod errors;
+mod operations;
 mod state;
 mod ui;
 
@@ -10,6 +11,7 @@ use std::rc::Rc;
 use taxstud_core::*;
 
 use errors::{map_file_load_error, map_file_save_error, map_revert_error};
+use operations::{collect_facets, validate_item_input, FileOperations};
 use state::{AppState, UiState, PendingAction, SimpleConfirmationAction};
 use ui::{
     create_facet_inputs, format_facets, hide_confirmation, hide_error, hide_simple_confirmation,
@@ -107,38 +109,12 @@ pub fn main() {
                     "You have unsaved changes. Do you want to save before opening another file?",
                 );
             } else {
-                // No unsaved changes, proceed with open
+                // No unsaved changes, proceed with open using FileOperations
                 let app_state = app_state.clone();
+                let main_window_clone = main_window.clone_strong();
                 slint::spawn_local(async move {
-                    if let Some(file) = rfd::AsyncFileDialog::new()
-                        .add_filter("JSON", &["json"])
-                        .set_title("Open Taxonomy File")
-                        .pick_file()
-                        .await
-                    {
-                        let path = file.path().to_path_buf();
-
-                        // Load the file (borrow mutably, then drop the borrow)
-                        let load_result = app_state.borrow_mut().load_from_file(path.clone());
-
-                        match load_result {
-                            Ok(_) => {
-                                // Update window title (borrow immutably)
-                                let title = app_state.borrow().get_window_title();
-                                main_window.set_window_title(SharedString::from(title));
-
-                                // Update UI with loaded data (borrow immutably)
-                                update_ui_from_state(&main_window, &app_state.borrow());
-
-                                set_status(&main_window, "File loaded successfully", StatusLevel::Success);
-                            }
-                            Err(e) => {
-                                // Show enhanced error dialog using error mapper
-                                let (title, message, details) = map_file_load_error(&*e, &path);
-                                show_error(&main_window, title, message, details);
-                            }
-                        }
-                    }
+                    let ops = FileOperations::new(&app_state, &main_window_clone);
+                    ops.open_file_dialog_and_load().await;
                 }).unwrap();
             }
         });
@@ -152,20 +128,9 @@ pub fn main() {
         main_window.on_file_save(move || {
             let main_window = main_window_weak.unwrap();
 
-            let save_result = app_state.borrow_mut().save();
-
-            match save_result {
-                Ok(_) => {
-                    let title = app_state.borrow().get_window_title();
-                    main_window.set_window_title(SharedString::from(title));
-                    set_status(&main_window, "File saved successfully", StatusLevel::Success);
-                }
-                Err(e) => {
-                    // Show enhanced error dialog using error mapper
-                    let (title, message, details) = map_file_save_error(&*e, None);
-                    show_error(&main_window, title, message, details);
-                }
-            }
+            // Use FileOperations for saving
+            let ops = FileOperations::new(&app_state, &main_window);
+            let _ = ops.save();
         });
     }
 
@@ -177,31 +142,11 @@ pub fn main() {
         main_window.on_file_save_as(move || {
             let main_window = main_window_weak.unwrap();
             let app_state = app_state.clone();
+            let main_window_clone = main_window.clone_strong();
 
             slint::spawn_local(async move {
-                if let Some(file) = rfd::AsyncFileDialog::new()
-                    .add_filter("JSON", &["json"])
-                    .set_title("Save Taxonomy As")
-                    .save_file()
-                    .await
-                {
-                    let path = file.path().to_path_buf();
-
-                    let save_result = app_state.borrow_mut().save_as(path.clone());
-
-                    match save_result {
-                        Ok(_) => {
-                            let title = app_state.borrow().get_window_title();
-                            main_window.set_window_title(SharedString::from(title));
-                            set_status(&main_window, "File saved successfully", StatusLevel::Success);
-                        }
-                        Err(e) => {
-                            // Show enhanced error dialog using error mapper
-                            let (title, message, details) = map_file_save_error(&*e, Some(&path));
-                            show_error(&main_window, title, message, details);
-                        }
-                    }
-                }
+                let ops = FileOperations::new(&app_state, &main_window_clone);
+                ops.save_as().await;
             }).unwrap();
         });
     }
@@ -455,35 +400,17 @@ pub fn main() {
             let new_path = main_window.get_edit_item_path().to_string();
             let facet_inputs = main_window.get_edit_facet_inputs();
 
-            // Validate inputs
-            if new_name.trim().is_empty() {
-                main_window.set_validation_error(SharedString::from("Name cannot be empty"));
-                return;
-            }
-
-            // Parse classification path (comma-separated)
-            let classical_path: Vec<String> = new_path
-                .split(',')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect();
-
-            if classical_path.is_empty() {
-                main_window.set_validation_error(SharedString::from("Classification path cannot be empty"));
-                return;
-            }
-
-            // Collect facets from inputs
-            let mut facets_map: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
-            for facet_input in facet_inputs.iter() {
-                let value = facet_input.value.to_string();
-                if !value.trim().is_empty() {
-                    facets_map.insert(
-                        facet_input.name.to_string(),
-                        serde_json::Value::String(value.trim().to_string())
-                    );
+            // Validate inputs using validation module
+            let (validated_name, classical_path) = match validate_item_input(&new_name, &new_path) {
+                Ok(result) => result,
+                Err(e) => {
+                    main_window.set_validation_error(SharedString::from(e.message));
+                    return;
                 }
-            }
+            };
+
+            // Collect facets from inputs using validation module
+            let facets_map = collect_facets(&facet_inputs);
 
             // Update the item in the taxonomy
             let mut state_mut = app_state.borrow_mut();
@@ -492,7 +419,7 @@ pub fn main() {
                     let selected_idx = main_window.get_selected_item_index();
                     if selected_idx >= 0 && (selected_idx as usize) < items.len() {
                         let item = &mut items[selected_idx as usize];
-                        item.name = new_name.clone();
+                        item.name = validated_name.clone();
                         item.classical_path = classical_path;
                         item.facets = facets_map;
 
@@ -591,39 +518,21 @@ pub fn main() {
             let new_path = main_window.get_new_item_path().to_string();
             let facet_inputs = main_window.get_create_facet_inputs();
 
-            // Validate inputs
-            if new_name.trim().is_empty() {
-                main_window.set_validation_error(SharedString::from("Name cannot be empty"));
-                return;
-            }
-
-            // Parse classification path (comma-separated)
-            let classical_path: Vec<String> = new_path
-                .split(',')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect();
-
-            if classical_path.is_empty() {
-                main_window.set_validation_error(SharedString::from("Classification path cannot be empty"));
-                return;
-            }
-
-            // Collect facets from inputs
-            let mut facets_map: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
-            for facet_input in facet_inputs.iter() {
-                let value = facet_input.value.to_string();
-                if !value.trim().is_empty() {
-                    facets_map.insert(
-                        facet_input.name.to_string(),
-                        serde_json::Value::String(value.trim().to_string())
-                    );
+            // Validate inputs using validation module
+            let (validated_name, classical_path) = match validate_item_input(&new_name, &new_path) {
+                Ok(result) => result,
+                Err(e) => {
+                    main_window.set_validation_error(SharedString::from(e.message));
+                    return;
                 }
-            }
+            };
+
+            // Collect facets from inputs using validation module
+            let facets_map = collect_facets(&facet_inputs);
 
             // Create new item
             let new_item = Item {
-                name: new_name.clone(),
+                name: validated_name.clone(),
                 classical_path,
                 facets: facets_map,
                 extra: std::collections::HashMap::new(),
@@ -649,7 +558,7 @@ pub fn main() {
                 refresh_ui_after_state_change(
                     &main_window,
                     &app_state,
-                    &format!("Item '{}' created successfully", new_name),
+                    &format!("Item '{}' created successfully", validated_name),
                     StatusLevel::Success,
                 );
             }
@@ -817,31 +726,12 @@ pub fn main() {
                     if let Some(action) = ui_state.borrow_mut().pending_action.take() {
                         match action {
                             PendingAction::Open => {
-                                // Trigger file open
+                                // Trigger file open using FileOperations
                                 let app_state = app_state.clone();
+                                let main_window = main_window.clone_strong();
                                 slint::spawn_local(async move {
-                                    if let Some(file) = rfd::AsyncFileDialog::new()
-                                        .add_filter("JSON", &["json"])
-                                        .set_title("Open Taxonomy File")
-                                        .pick_file()
-                                        .await
-                                    {
-                                        let path = file.path().to_path_buf();
-                                        let load_result = app_state.borrow_mut().load_from_file(path.clone());
-
-                                        match load_result {
-                                            Ok(_) => {
-                                                let title = app_state.borrow().get_window_title();
-                                                main_window.set_window_title(SharedString::from(title));
-                                                update_ui_from_state(&main_window, &app_state.borrow());
-                                                set_status(&main_window, "File loaded successfully", StatusLevel::Success);
-                                            }
-                                            Err(e) => {
-                                                let (title, message, details) = map_file_load_error(&*e, &path);
-                                                show_error(&main_window, title, message, details);
-                                            }
-                                        }
-                                    }
+                                    let ops = FileOperations::new(&app_state, &main_window);
+                                    ops.open_file_dialog_and_load().await;
                                 }).unwrap();
                             }
                             PendingAction::New => {
@@ -886,31 +776,12 @@ pub fn main() {
             if let Some(action) = ui_state.borrow_mut().pending_action.take() {
                 match action {
                     PendingAction::Open => {
-                        // Trigger file open
+                        // Trigger file open using FileOperations
                         let app_state = app_state.clone();
+                        let main_window = main_window.clone_strong();
                         slint::spawn_local(async move {
-                            if let Some(file) = rfd::AsyncFileDialog::new()
-                                .add_filter("JSON", &["json"])
-                                .set_title("Open Taxonomy File")
-                                .pick_file()
-                                .await
-                            {
-                                let path = file.path().to_path_buf();
-                                let load_result = app_state.borrow_mut().load_from_file(path.clone());
-
-                                match load_result {
-                                    Ok(_) => {
-                                        let title = app_state.borrow().get_window_title();
-                                        main_window.set_window_title(SharedString::from(title));
-                                        update_ui_from_state(&main_window, &app_state.borrow());
-                                        set_status(&main_window, "File loaded successfully", StatusLevel::Success);
-                                    }
-                                    Err(e) => {
-                                        let (title, message, details) = map_file_load_error(&*e, &path);
-                                        show_error(&main_window, title, message, details);
-                                    }
-                                }
-                            }
+                            let ops = FileOperations::new(&app_state, &main_window);
+                            ops.open_file_dialog_and_load().await;
                         }).unwrap();
                     }
                     PendingAction::New => {
@@ -976,31 +847,13 @@ pub fn main() {
             if let Some(action) = action {
                 match action {
                     SimpleConfirmationAction::Revert => {
-                        // Get the file path (borrow immutably, then drop)
-                        let path = app_state.borrow().current_file.clone();
-
-                        if let Some(file_path) = path {
-                            // Now borrow mutably to reload
-                            let load_result = app_state.borrow_mut().load_from_file(file_path.clone());
-
-                            match load_result {
-                                Ok(_) => {
-                                    // Update window title
-                                    let title = app_state.borrow().get_window_title();
-                                    main_window.set_window_title(SharedString::from(title));
-
-                                    // Update UI with loaded data
-                                    update_ui_from_state(&main_window, &app_state.borrow());
-
-                                    set_status(&main_window, "Reverted to saved version", StatusLevel::Success);
-                                }
-                                Err(e) => {
-                                    // Show error using error mapper
-                                    let (title, message, details) = map_revert_error(&*e, &file_path);
-                                    show_error(&main_window, title, message, details);
-                                }
-                            }
-                        }
+                        // Use FileOperations for revert
+                        let app_state = app_state.clone();
+                        let main_window = main_window.clone_strong();
+                        slint::spawn_local(async move {
+                            let ops = FileOperations::new(&app_state, &main_window);
+                            ops.revert().await;
+                        }).unwrap();
                     }
                 }
             }
