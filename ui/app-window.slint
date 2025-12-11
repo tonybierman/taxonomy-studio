@@ -449,7 +449,7 @@ export component MainWindow inherits Window {
                         padding: 12px;
                         spacing: root.sp-content;
 
-                        if root.selected-item-name != "" && !root.is-editing : VerticalBox {
+                        if root.selected-item-name != "" && !root.is-editing && !root.is-creating : VerticalBox {
                             spacing: 12px;
 
                             // Item name (read-only)
