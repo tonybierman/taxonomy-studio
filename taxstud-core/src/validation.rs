@@ -1,4 +1,4 @@
-use crate::models::{HybridTaxonomy, HierarchyNode, Item};
+use crate::models::{HierarchyNode, HybridTaxonomy, Item};
 use std::collections::{HashMap, HashSet};
 
 /// Validate the hybrid taxonomy schema
@@ -26,7 +26,10 @@ pub fn validate_taxonomy(taxonomy: &HybridTaxonomy) -> Result<(), Vec<String>> {
         }
 
         if values.is_empty() {
-            errors.push(format!("Facet '{}' must have at least one value", facet_name));
+            errors.push(format!(
+                "Facet '{}' must have at least one value",
+                facet_name
+            ));
         }
 
         // Check for duplicate values within a facet
@@ -36,7 +39,10 @@ pub fn validate_taxonomy(taxonomy: &HybridTaxonomy) -> Result<(), Vec<String>> {
                 errors.push(format!("Facet '{}' contains empty value", facet_name));
             }
             if !seen.insert(value) {
-                errors.push(format!("Facet '{}' has duplicate value: '{}'", facet_name, value));
+                errors.push(format!(
+                    "Facet '{}' has duplicate value: '{}'",
+                    facet_name, value
+                ));
             }
         }
     }
@@ -63,7 +69,10 @@ pub fn validate_hierarchy_nodes(nodes: &[HierarchyNode], parent: &str, errors: &
             errors.push("Hierarchy node species cannot be empty".to_string());
         }
         if node.differentia.trim().is_empty() {
-            errors.push(format!("Species '{}' must have non-empty differentia", node.species));
+            errors.push(format!(
+                "Species '{}' must have non-empty differentia",
+                node.species
+            ));
         }
 
         // Validate genus matches parent
@@ -175,14 +184,23 @@ pub fn validate_items(items: &[Item], taxonomy: &HybridTaxonomy, errors: &mut Ve
     }
 }
 
-pub fn validate_classical_path(item: &Item, taxonomy: &HybridTaxonomy, item_ref: &str, errors: &mut Vec<String>) {
+pub fn validate_classical_path(
+    item: &Item,
+    taxonomy: &HybridTaxonomy,
+    item_ref: &str,
+    errors: &mut Vec<String>,
+) {
     if item.classical_path.len() < 2 {
         return; // Root only is valid
     }
 
     // Build a map of all valid parent-child relationships
     let mut valid_paths = HashMap::new();
-    build_valid_paths(&taxonomy.classical_hierarchy.root, &taxonomy.classical_hierarchy.children, &mut valid_paths);
+    build_valid_paths(
+        &taxonomy.classical_hierarchy.root,
+        &taxonomy.classical_hierarchy.children,
+        &mut valid_paths,
+    );
 
     // Validate each step in the path
     for i in 0..item.classical_path.len() - 1 {
@@ -208,7 +226,7 @@ pub fn validate_classical_path(item: &Item, taxonomy: &HybridTaxonomy, item_ref:
 fn build_valid_paths(
     parent: &str,
     children: &Option<Vec<HierarchyNode>>,
-    map: &mut HashMap<String, Vec<String>>
+    map: &mut HashMap<String, Vec<String>>,
 ) {
     if let Some(nodes) = children {
         let mut child_names = Vec::new();

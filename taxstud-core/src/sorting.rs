@@ -50,10 +50,7 @@ pub fn normalize_for_sorting(s: &str) -> String {
     let without_articles = strip_leading_articles(s);
 
     // Unicode normalization (NFD decomposition) and lowercase
-    let normalized: String = without_articles
-        .nfd()
-        .collect::<String>()
-        .to_lowercase();
+    let normalized: String = without_articles.nfd().collect::<String>().to_lowercase();
 
     // Remove leading/trailing whitespace and collapse internal whitespace
     normalized.split_whitespace().collect::<Vec<_>>().join(" ")
@@ -62,6 +59,9 @@ pub fn normalize_for_sorting(s: &str) -> String {
 /// Strip leading articles following library science conventions
 /// Supports: a, an, the (English) and common articles in other languages
 pub fn strip_leading_articles(s: &str) -> String {
-    let re = Regex::new(r"^(?i)(the|a|an|der|die|das|le|la|les|el|la|los|las|il|lo|i|gli|un|une|een)\s+").unwrap();
+    let re = Regex::new(
+        r"^(?i)(the|a|an|der|die|das|le|la|les|el|la|los|las|il|lo|i|gli|un|une|een)\s+",
+    )
+    .unwrap();
     re.replace(s, "").to_string()
 }

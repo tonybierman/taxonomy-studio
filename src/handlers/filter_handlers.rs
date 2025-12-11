@@ -1,4 +1,4 @@
-use slint::{ComponentHandle, Model, SharedString, StandardListViewItem, VecModel};
+use slint::{ComponentHandle, SharedString, StandardListViewItem, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
 use taxstud_core::{matches_filters, parse_facet_filters, sort_items, Filters};

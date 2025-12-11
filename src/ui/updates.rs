@@ -27,24 +27,6 @@ pub fn refresh_ui_after_state_change(
     set_status(main_window, status_message, level);
 }
 
-/// Refresh UI after successfully loading a file
-/// Convenience function that combines common operations after file load
-pub fn refresh_after_file_load(
-    main_window: &MainWindow,
-    state: &AppState,
-    message: impl Into<SharedString>,
-) {
-    // Update window title
-    let title = state.get_window_title();
-    main_window.set_window_title(SharedString::from(title));
-
-    // Update UI with loaded data
-    update_ui_from_state(main_window, state);
-
-    // Set success status
-    set_status(main_window, message, StatusLevel::Success);
-}
-
 /// Update the UI from the current application state
 pub fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
     // Clear selected item

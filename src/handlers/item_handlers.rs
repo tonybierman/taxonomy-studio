@@ -1,4 +1,4 @@
-use slint::{ComponentHandle, Model, SharedString, VecModel};
+use slint::{ComponentHandle, SharedString, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
 use taxstud_core::Item;
@@ -39,8 +39,9 @@ fn register_item_selected(window: &MainWindow, app_state: &Rc<RefCell<AppState>>
 
                     // Update selected item properties
                     main_window.set_selected_item_name(SharedString::from(&item.name));
-                    main_window
-                        .set_selected_item_path(SharedString::from(item.classical_path.join(" → ")));
+                    main_window.set_selected_item_path(SharedString::from(
+                        item.classical_path.join(" → "),
+                    ));
 
                     // Format facets
                     let facets_text = format_facets(&item.facets);
@@ -158,7 +159,11 @@ fn register_save_edit(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) {
                         }
                     }
 
-                    set_status(&main_window, "Item saved successfully", StatusLevel::Success);
+                    set_status(
+                        &main_window,
+                        "Item saved successfully",
+                        StatusLevel::Success,
+                    );
                 }
             }
         }

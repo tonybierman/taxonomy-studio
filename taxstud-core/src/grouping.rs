@@ -19,10 +19,7 @@ pub fn group_items_by_facet(items: &[Item], group_field: &str) -> HashMap<String
         } else {
             // Items with multiple values appear in multiple groups
             for value in facet_values {
-                groups
-                    .entry(value)
-                    .or_default()
-                    .push(item.clone());
+                groups.entry(value).or_default().push(item.clone());
             }
         }
     }

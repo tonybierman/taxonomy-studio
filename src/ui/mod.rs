@@ -8,5 +8,4 @@ pub use dialogs::{
     show_error, show_simple_confirmation,
 };
 pub use formatting::{create_facet_inputs, format_facets};
-pub use types::{FacetInput, StatusLevel, StatusMessage, TreeNode};
 pub use updates::{refresh_ui_after_state_change, update_ui_from_state};

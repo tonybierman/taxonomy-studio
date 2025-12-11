@@ -1,4 +1,4 @@
-use crate::models::{Item, Filters};
+use crate::models::{Filters, Item};
 use std::collections::HashMap;
 
 /// Parse facet filter strings in the format "key=value" into a filter map
@@ -33,7 +33,9 @@ pub fn matches_filters(item: &Item, filters: &Filters) -> bool {
     // Check genus filter (OR within genera)
     if !filters.genera.is_empty() {
         let matches_genus = filters.genera.iter().any(|genus| {
-            item.classical_path.iter().any(|path_item| path_item == genus)
+            item.classical_path
+                .iter()
+                .any(|path_item| path_item == genus)
         });
 
         if !matches_genus {

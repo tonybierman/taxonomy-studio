@@ -5,11 +5,10 @@ mod state;
 mod ui;
 
 use clap::Parser;
-use slint::{ComponentHandle, Model, SharedString, StandardListViewItem, VecModel};
+use slint::{ComponentHandle, SharedString};
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
-use taxstud_core::*;
 
 use handlers::*;
 use state::{AppState, UiState};
@@ -50,14 +49,21 @@ pub fn main() {
                 // Update UI with loaded data
                 update_ui_from_state(&main_window, &app_state.borrow());
 
-                set_status(&main_window, format!("Loaded: {}", file_path.display()), StatusLevel::Success);
+                set_status(
+                    &main_window,
+                    format!("Loaded: {}", file_path.display()),
+                    StatusLevel::Success,
+                );
             }
             Err(e) => {
-                set_status(&main_window, format!("Error loading file: {}", e), StatusLevel::Danger);
+                set_status(
+                    &main_window,
+                    format!("Error loading file: {}", e),
+                    StatusLevel::Danger,
+                );
             }
         }
     }
-
 
     // Register all handlers
     register_item_handlers(&main_window, &app_state);

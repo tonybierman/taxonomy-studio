@@ -1,8 +1,7 @@
-use slint::{ComponentHandle, SharedString};
+use slint::SharedString;
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
-use taxstud_core::*;
 
 use crate::errors::{map_file_load_error, map_file_save_error, map_revert_error};
 use crate::state::AppState;
@@ -47,7 +46,11 @@ impl<'a> FileOperations<'a> {
                 // Update UI with loaded data (borrow immutably)
                 update_ui_from_state(self.window, &self.state.borrow());
 
-                set_status(self.window, "File loaded successfully", StatusLevel::Success);
+                set_status(
+                    self.window,
+                    "File loaded successfully",
+                    StatusLevel::Success,
+                );
             }
             Err(e) => {
                 // Show enhanced error dialog using error mapper
@@ -132,7 +135,11 @@ impl<'a> FileOperations<'a> {
                     // Update UI with loaded data
                     update_ui_from_state(self.window, &self.state.borrow());
 
-                    set_status(self.window, "Reverted to saved version", StatusLevel::Success);
+                    set_status(
+                        self.window,
+                        "Reverted to saved version",
+                        StatusLevel::Success,
+                    );
                 }
                 Err(e) => {
                     let (title, message, details) = map_revert_error(&*e, &file_path);

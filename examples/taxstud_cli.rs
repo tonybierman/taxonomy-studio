@@ -64,11 +64,10 @@ struct Cli {
 fn main() {
     let cli = Cli::parse();
 
-    let taxonomy = load_taxonomy(&cli.file)
-        .unwrap_or_else(|err| {
-            eprintln!("Error loading taxonomy from '{}': {}", cli.file, err);
-            process::exit(1);
-        });
+    let taxonomy = load_taxonomy(&cli.file).unwrap_or_else(|err| {
+        eprintln!("Error loading taxonomy from '{}': {}", cli.file, err);
+        process::exit(1);
+    });
 
     // Validate the taxonomy schema
     if let Err(errors) = validate_taxonomy(&taxonomy) {
@@ -93,7 +92,10 @@ fn parse_filters(cli: &Cli) -> Filters {
     // Check for invalid facet formats and warn
     for facet_str in &cli.facets {
         if !facet_str.contains('=') {
-            eprintln!("Warning: Invalid facet format '{}'. Expected 'name=value'", facet_str);
+            eprintln!(
+                "Warning: Invalid facet format '{}'. Expected 'name=value'",
+                facet_str
+            );
         }
     }
 

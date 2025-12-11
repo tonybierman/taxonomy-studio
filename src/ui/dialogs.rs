@@ -1,7 +1,7 @@
 use slint::SharedString;
 
-use crate::MainWindow;
 use super::types::{StatusLevel, StatusMessage};
+use crate::MainWindow;
 
 /// Helper function to set status message with semantic level
 pub fn set_status(window: &MainWindow, text: impl Into<SharedString>, level: StatusLevel) {

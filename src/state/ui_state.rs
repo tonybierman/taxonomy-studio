@@ -21,6 +21,7 @@ pub struct UiState {
     pub simple_confirmation_action: Option<SimpleConfirmationAction>,
 }
 
+#[allow(dead_code)]
 impl UiState {
     pub fn new() -> Self {
         Self {

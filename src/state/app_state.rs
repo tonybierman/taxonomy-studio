@@ -36,9 +36,8 @@ impl AppState {
         let taxonomy = load_taxonomy(&path)?;
 
         // Validate the taxonomy
-        validate_taxonomy(&taxonomy).map_err(|errors| {
-            format!("Validation failed:\n{}", errors.join("\n"))
-        })?;
+        validate_taxonomy(&taxonomy)
+            .map_err(|errors| format!("Validation failed:\n{}", errors.join("\n")))?;
 
         self.taxonomy = Some(taxonomy);
         self.current_file = Some(path);
@@ -83,9 +82,10 @@ impl AppState {
                 root: "Root".to_string(),
                 children: None,
             },
-            faceted_dimensions: std::collections::HashMap::from([
-                ("category".to_string(), vec!["uncategorized".to_string()]),
-            ]),
+            faceted_dimensions: std::collections::HashMap::from([(
+                "category".to_string(),
+                vec!["uncategorized".to_string()],
+            )]),
             example_items: Some(Vec::new()),
             extra: std::collections::HashMap::new(),
         };
@@ -103,7 +103,8 @@ impl AppState {
 
     /// Get window title with file name and dirty indicator
     pub fn get_window_title(&self) -> String {
-        let file_name = self.current_file
+        let file_name = self
+            .current_file
             .as_ref()
             .and_then(|p| p.file_name())
             .and_then(|n| n.to_str())

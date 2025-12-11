@@ -24,7 +24,10 @@ pub fn map_file_load_error(error: &dyn std::error::Error, path: &Path) -> (Strin
         (
             "Permission Denied".to_string(),
             "Permission denied.".to_string(),
-            format!("You don't have permission to read this file:\n{}", path.display()),
+            format!(
+                "You don't have permission to read this file:\n{}",
+                path.display()
+            ),
         )
     } else {
         (
@@ -37,7 +40,10 @@ pub fn map_file_load_error(error: &dyn std::error::Error, path: &Path) -> (Strin
 
 /// Map file saving errors to user-friendly messages
 /// Returns (title, message, details)
-pub fn map_file_save_error(error: &dyn std::error::Error, path: Option<&Path>) -> (String, String, String) {
+pub fn map_file_save_error(
+    error: &dyn std::error::Error,
+    path: Option<&Path>,
+) -> (String, String, String) {
     let error_string = error.to_string();
 
     if error_string.contains("No file path set") {
@@ -96,7 +102,10 @@ pub fn map_revert_error(error: &dyn std::error::Error, path: &Path) -> (String, 
         (
             "Permission Denied".to_string(),
             "Permission denied.".to_string(),
-            format!("You don't have permission to read this file:\n{}", path.display()),
+            format!(
+                "You don't have permission to read this file:\n{}",
+                path.display()
+            ),
         )
     } else {
         (

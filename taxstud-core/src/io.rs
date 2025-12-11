@@ -11,7 +11,10 @@ pub fn load_taxonomy<P: AsRef<Path>>(path: P) -> Result<HybridTaxonomy, Box<dyn 
 }
 
 /// Save a taxonomy to a JSON file with pretty printing
-pub fn save_taxonomy<P: AsRef<Path>>(taxonomy: &HybridTaxonomy, path: P) -> Result<(), Box<dyn Error>> {
+pub fn save_taxonomy<P: AsRef<Path>>(
+    taxonomy: &HybridTaxonomy,
+    path: P,
+) -> Result<(), Box<dyn Error>> {
     let json = serde_json::to_string_pretty(taxonomy)?;
     fs::write(path, json)?;
     Ok(())

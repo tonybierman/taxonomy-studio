@@ -56,9 +56,7 @@ pub fn parse_classification_path(path_str: &str) -> Result<Vec<String>, Validati
 }
 
 /// Collect facets from Slint FacetInput model
-pub fn collect_facets(
-    facet_inputs: &ModelRc<FacetInput>,
-) -> HashMap<String, serde_json::Value> {
+pub fn collect_facets(facet_inputs: &ModelRc<FacetInput>) -> HashMap<String, serde_json::Value> {
     let mut facets_map = HashMap::new();
 
     for facet_input in facet_inputs.iter() {
