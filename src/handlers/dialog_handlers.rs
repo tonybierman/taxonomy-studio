@@ -200,7 +200,7 @@ fn execute_pending_action(
             app_state.borrow_mut().create_new();
             let title = app_state.borrow().get_window_title();
             main_window.set_window_title(SharedString::from(title));
-            update_ui_from_state(main_window, &app_state);
+            update_ui_from_state(main_window, app_state);
             set_status(main_window, "New taxonomy created", StatusLevel::Success);
         }
     }

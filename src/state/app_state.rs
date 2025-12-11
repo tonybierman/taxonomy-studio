@@ -26,6 +26,7 @@ pub struct AppState {
     pub displayed_items: Vec<Item>,
 }
 
+#[allow(dead_code)]
 impl AppState {
     pub fn new() -> Self {
         Self {
