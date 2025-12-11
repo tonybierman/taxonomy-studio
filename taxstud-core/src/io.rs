@@ -26,9 +26,8 @@ pub fn load_data_with_schema<P: AsRef<Path>>(
 
     // Validate against JSON Schema if available
     if let Some(ref json_schema) = schema.json_schema {
-        validate_against_schema(json_schema, &data_value).map_err(|errors| {
-            format!("Validation failed:\n{}", errors.join("\n"))
-        })?;
+        validate_against_schema(json_schema, &data_value)
+            .map_err(|errors| format!("Validation failed:\n{}", errors.join("\n")))?;
     }
 
     // Deserialize if validation passed

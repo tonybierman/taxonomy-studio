@@ -97,7 +97,12 @@ fn parse_filters(cli: &Cli) -> Filters {
     }
 }
 
-fn print_filtered_data(data: &TaxonomyData, _schema: &TaxonomySchema, filters: &Filters, cli: &Cli) {
+fn print_filtered_data(
+    data: &TaxonomyData,
+    _schema: &TaxonomySchema,
+    filters: &Filters,
+    cli: &Cli,
+) {
     println!("# Filtered Results\n");
 
     if has_filters(filters) {

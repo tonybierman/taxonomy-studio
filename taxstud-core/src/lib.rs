@@ -13,8 +13,7 @@ pub use filtering::{apply_filters, has_filters, matches_filters, parse_facet_fil
 pub use grouping::{get_sorted_group_names, group_items_by_facet};
 pub use io::{load_data_with_auto_schema, load_data_with_schema, load_schema, save_data};
 pub use models::{
-    ClassicalHierarchy, Filters, HierarchyNode, HybridTaxonomy, Item, TaxonomyData,
-    TaxonomySchema,
+    ClassicalHierarchy, Filters, HierarchyNode, HybridTaxonomy, Item, TaxonomyData, TaxonomySchema,
 };
 pub use schema::{build_schema_from_json, extract_classical_hierarchy, extract_faceted_dimensions};
 pub use schema_validation::validate_against_schema;

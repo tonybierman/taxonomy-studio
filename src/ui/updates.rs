@@ -70,7 +70,8 @@ pub fn update_ui_from_state(main_window: &MainWindow, state: &Rc<RefCell<AppStat
         let mut items = data.items.clone();
 
         // Apply filters if any are active
-        let has_active_filters = !state_borrow.filters.genera.is_empty() || !state_borrow.filters.facets.is_empty();
+        let has_active_filters =
+            !state_borrow.filters.genera.is_empty() || !state_borrow.filters.facets.is_empty();
         if has_active_filters {
             items.retain(|item| matches_filters(item, &state_borrow.filters));
         }

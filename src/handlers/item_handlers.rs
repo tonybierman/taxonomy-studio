@@ -5,9 +5,7 @@ use taxstud_core::Item;
 
 use crate::operations::{collect_facets, validate_item_input};
 use crate::state::AppState;
-use crate::ui::{
-    create_facet_inputs, format_facets, refresh_ui_after_state_change, set_status,
-};
+use crate::ui::{create_facet_inputs, format_facets, refresh_ui_after_state_change, set_status};
 use crate::{MainWindow, StatusLevel};
 
 /// Register all item CRUD handlers
@@ -37,9 +35,7 @@ fn register_item_selected(window: &MainWindow, app_state: &Rc<RefCell<AppState>>
 
             // Update selected item properties
             main_window.set_selected_item_name(SharedString::from(&item.name));
-            main_window.set_selected_item_path(SharedString::from(
-                item.classical_path.join(" → "),
-            ));
+            main_window.set_selected_item_path(SharedString::from(item.classical_path.join(" → ")));
 
             // Format facets
             let facets_text = format_facets(&item.facets);
@@ -65,12 +61,10 @@ fn register_start_edit(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) {
 
                 // Populate edit fields
                 main_window.set_edit_item_name(SharedString::from(&item.name));
-                main_window
-                    .set_edit_item_path(SharedString::from(item.classical_path.join(", ")));
+                main_window.set_edit_item_path(SharedString::from(item.classical_path.join(", ")));
 
                 // Populate facet inputs based on schema dimensions
-                let facet_inputs =
-                    create_facet_inputs(&schema.faceted_dimensions, &item.facets);
+                let facet_inputs = create_facet_inputs(&schema.faceted_dimensions, &item.facets);
                 let facet_inputs_model = Rc::new(VecModel::from(facet_inputs));
                 main_window.set_edit_facet_inputs(facet_inputs_model.into());
 
@@ -268,7 +262,9 @@ fn register_delete_item(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) 
         let item_name = {
             let state_borrow = app_state.borrow();
             if (selected_idx as usize) < state_borrow.displayed_items.len() {
-                state_borrow.displayed_items[selected_idx as usize].name.clone()
+                state_borrow.displayed_items[selected_idx as usize]
+                    .name
+                    .clone()
             } else {
                 return;
             }

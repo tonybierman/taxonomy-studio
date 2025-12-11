@@ -166,9 +166,7 @@ impl AppState {
             return None;
         }
 
-        self.data
-            .as_ref()
-            .and_then(|d| d.items.get(index as usize))
+        self.data.as_ref().and_then(|d| d.items.get(index as usize))
     }
 
     /// Get a mutable reference to an item by index
