@@ -27,20 +27,7 @@
                     "--package=taxstud"
                 ]
             },
-            "args": ["assets/movies.json"]
-        },
-        {
-            "name": "Debug taxstud books",
-            "type": "lldb",
-            "request": "launch",
-            "cargo": {
-                "args": [
-                    "run",
-                    "--bin=taxstud",
-                    "--package=taxstud"
-                ]
-            },
-            "args": ["assets/books.json"]
+            "args": ["assets/data.json"]
         },
         {
             "name": "Debug unit tests in executable 'taxstud'",
@@ -65,7 +52,7 @@
                     "--package=taxstud"
                 ]
             },
-            "args": ["assets/movies.json"]
+            "args": ["assets/data.json"]
         },
         {
             "name": "Debug unit tests in example 'taxstud_cli'",

@@ -11,13 +11,13 @@ pub struct HybridTaxonomy {
     pub extra: HashMap<String, serde_json::Value>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ClassicalHierarchy {
     pub root: String,
     pub children: Option<Vec<HierarchyNode>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HierarchyNode {
     pub genus: String,
     pub species: String,
@@ -71,6 +71,28 @@ impl Item {
             })
             .unwrap_or_default()
     }
+}
+
+/// Schema definition - contains classical hierarchy and facet dimensions
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TaxonomySchema {
+    pub schema_id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub classical_hierarchy: ClassicalHierarchy,
+    pub faceted_dimensions: HashMap<String, Vec<String>>,
+    /// Raw JSON Schema for validation (not serialized)
+    #[serde(skip)]
+    pub json_schema: Option<serde_json::Value>,
+}
+
+/// Data file - references schema and contains items only
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TaxonomyData {
+    pub schema: String,
+    pub items: Vec<Item>,
+    #[serde(flatten)]
+    pub extra: HashMap<String, serde_json::Value>,
 }
 
 #[derive(Debug)]

@@ -1,0 +1,260 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/movie-taxonomy.schema.json",
+  "title": "Movie Taxonomy Schema",
+  "description": "Schema for hybrid taxonomy of movies combining classical hierarchical structure with faceted classification",
+  "type": "object",
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/movieItem"
+      },
+      "minItems": 1
+    }
+  },
+  "classical_hierarchy": {
+    "root": "Movie",
+    "children": [
+      {
+        "genus": "Movie",
+        "species": "Narrative Film",
+        "differentia": "tells a fictional or fictionalized story",
+        "children": [
+          {
+            "genus": "Narrative Film",
+            "species": "Drama",
+            "differentia": "focuses on realistic characters and emotional themes"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Comedy",
+            "differentia": "primarily intended to amuse and entertain"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Action",
+            "differentia": "emphasizes physical feats and stunts"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Thriller",
+            "differentia": "creates suspense and tension"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Horror",
+            "differentia": "intended to frighten or disturb"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Science Fiction",
+            "differentia": "explores speculative or futuristic concepts"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Fantasy",
+            "differentia": "features magical or supernatural elements"
+          },
+          {
+            "genus": "Narrative Film",
+            "species": "Romance",
+            "differentia": "centers on romantic relationships"
+          }
+        ]
+      },
+      {
+        "genus": "Movie",
+        "species": "Documentary",
+        "differentia": "presents factual information about real subjects",
+        "children": [
+          {
+            "genus": "Documentary",
+            "species": "Nature Documentary",
+            "differentia": "focuses on wildlife and natural environments"
+          },
+          {
+            "genus": "Documentary",
+            "species": "Historical Documentary",
+            "differentia": "examines past events and figures"
+          },
+          {
+            "genus": "Documentary",
+            "species": "Social Documentary",
+            "differentia": "explores social issues and human experiences"
+          }
+        ]
+      },
+      {
+        "genus": "Movie",
+        "species": "Animated Film",
+        "differentia": "created through animation rather than live action",
+        "children": [
+          {
+            "genus": "Animated Film",
+            "species": "Traditional Animation",
+            "differentia": "hand-drawn or 2D animation"
+          },
+          {
+            "genus": "Animated Film",
+            "species": "Computer Animation",
+            "differentia": "created using 3D CGI technology"
+          }
+        ]
+      }
+    ]
+  },
+  "faceted_dimensions": {
+    "runtime": ["short", "standard", "long", "epic"],
+    "target_audience": ["children", "family", "teen", "adult", "mature"],
+    "pacing": ["slow", "deliberate", "moderate", "fast", "frenetic"],
+    "tone": ["lighthearted", "humorous", "serious", "dark", "grim", "whimsical", "satirical", "somber", "heartwarming"],
+    "visual_style": ["naturalistic", "stylized", "noir", "colorful", "minimalist", "baroque", "surreal"],
+    "budget_scale": ["micro", "low", "medium", "high", "blockbuster"],
+    "critical_reception": ["poor", "mixed", "positive", "acclaimed", "masterpiece"],
+    "box_office": ["flop", "modest", "successful", "hit", "phenomenon"],
+    "era": ["silent", "golden_age", "new_hollywood", "modern", "contemporary"],
+    "setting_period": ["ancient", "medieval", "victorian", "early_20th", "mid_20th", "contemporary", "near_future", "far_future"],
+    "emotional_impact": ["uplifting", "heartwarming", "thought_provoking", "devastating", "terrifying", "thrilling", "melancholic"],
+    "narrative_complexity": ["simple", "straightforward", "moderate", "complex", "labyrinthine"],
+    "violence_level": ["none", "mild", "moderate", "intense", "extreme"],
+    "cultural_origin": ["hollywood", "european", "asian", "latin_american", "african", "middle_eastern", "indie"]
+  },
+  "definitions": {
+    "taxonomyNode": {
+      "type": "object",
+      "required": ["genus", "species", "differentia"],
+      "properties": {
+        "genus": {
+          "type": "string",
+          "description": "Parent category"
+        },
+        "species": {
+          "type": "string",
+          "description": "Specific subcategory"
+        },
+        "differentia": {
+          "type": "string",
+          "description": "Defining characteristic that distinguishes this species"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/taxonomyNode"
+          }
+        }
+      }
+    },
+    "movieItem": {
+      "type": "object",
+      "required": ["name", "classical_path", "facets"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Title of the movie"
+        },
+        "classical_path": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 2,
+          "description": "Path through the classical hierarchy"
+        },
+        "facets": {
+          "type": "object",
+          "required": [
+            "runtime",
+            "target_audience",
+            "pacing",
+            "tone",
+            "visual_style",
+            "budget_scale",
+            "critical_reception",
+            "box_office",
+            "era",
+            "setting_period",
+            "emotional_impact",
+            "narrative_complexity",
+            "violence_level",
+            "cultural_origin"
+          ],
+          "properties": {
+            "runtime": {
+              "type": "string",
+              "enum": ["short", "standard", "long", "epic"]
+            },
+            "target_audience": {
+              "type": "string",
+              "enum": ["children", "family", "teen", "adult", "mature"]
+            },
+            "pacing": {
+              "type": "string",
+              "enum": ["slow", "deliberate", "moderate", "fast", "frenetic"]
+            },
+            "tone": {
+              "type": "string",
+              "enum": ["lighthearted", "humorous", "serious", "dark", "grim", "whimsical", "satirical", "somber", "heartwarming"]
+            },
+            "visual_style": {
+              "type": "string",
+              "enum": ["naturalistic", "stylized", "noir", "colorful", "minimalist", "baroque", "surreal"]
+            },
+            "budget_scale": {
+              "type": "string",
+              "enum": ["micro", "low", "medium", "high", "blockbuster"]
+            },
+            "critical_reception": {
+              "type": "string",
+              "enum": ["poor", "mixed", "positive", "acclaimed", "masterpiece"]
+            },
+            "box_office": {
+              "type": "string",
+              "enum": ["flop", "modest", "successful", "hit", "phenomenon"]
+            },
+            "era": {
+              "type": "string",
+              "enum": ["silent", "golden_age", "new_hollywood", "modern", "contemporary"]
+            },
+            "setting_period": {
+              "type": "string",
+              "enum": ["ancient", "medieval", "victorian", "early_20th", "mid_20th", "contemporary", "near_future", "far_future"]
+            },
+            "emotional_impact": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": ["uplifting", "heartwarming", "thought_provoking", "devastating", "terrifying", "thrilling", "melancholic"]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": ["uplifting", "heartwarming", "thought_provoking", "devastating", "terrifying", "thrilling", "melancholic"]
+                  },
+                  "minItems": 1
+                }
+              ]
+            },
+            "narrative_complexity": {
+              "type": "string",
+              "enum": ["simple", "straightforward", "moderate", "complex", "labyrinthine"]
+            },
+            "violence_level": {
+              "type": "string",
+              "enum": ["none", "mild", "moderate", "intense", "extreme"]
+            },
+            "cultural_origin": {
+              "type": "string",
+              "enum": ["hollywood", "european", "asian", "latin_american", "african", "middle_eastern", "indie"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional annotation about the classification"
+        }
+      }
+    }
+  }
+}

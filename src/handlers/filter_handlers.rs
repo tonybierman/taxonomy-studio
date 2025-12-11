@@ -23,24 +23,22 @@ fn register_sort_by_name(window: &MainWindow, app_state: &Rc<RefCell<AppState>>)
         let main_window = main_window_weak.unwrap();
         let state_borrow = app_state.borrow();
 
-        if let Some(ref taxonomy) = state_borrow.taxonomy {
-            if let Some(ref items) = taxonomy.example_items {
-                // Clone items for sorting (don't modify the taxonomy)
-                let mut sorted_items = items.clone();
+        if let Some(ref data) = state_borrow.data {
+            // Clone items for sorting (don't modify the data)
+            let mut sorted_items = data.items.clone();
 
-                // Sort by name using taxstud-core
-                sort_items(&mut sorted_items, "name");
+            // Sort by name using taxstud-core
+            sort_items(&mut sorted_items, "name");
 
-                // Update UI with sorted items
-                let items_model = Rc::new(VecModel::from(
-                    sorted_items
-                        .iter()
-                        .map(|item| StandardListViewItem::from(SharedString::from(&item.name)))
-                        .collect::<Vec<_>>(),
-                ));
-                main_window.set_items_list(items_model.into());
-                set_status(&main_window, "Items sorted by name", StatusLevel::Info);
-            }
+            // Update UI with sorted items
+            let items_model = Rc::new(VecModel::from(
+                sorted_items
+                    .iter()
+                    .map(|item| StandardListViewItem::from(SharedString::from(&item.name)))
+                    .collect::<Vec<_>>(),
+            ));
+            main_window.set_items_list(items_model.into());
+            set_status(&main_window, "Items sorted by name", StatusLevel::Info);
         }
     });
 }
@@ -82,44 +80,43 @@ fn register_apply_filters(window: &MainWindow, app_state: &Rc<RefCell<AppState>>
 
         // Apply filters
         let state_borrow = app_state.borrow();
-        if let Some(ref taxonomy) = state_borrow.taxonomy {
-            if let Some(ref items) = taxonomy.example_items {
-                let filtered_items: Vec<_> = items
+        if let Some(ref data) = state_borrow.data {
+            let filtered_items: Vec<_> = data
+                .items
+                .iter()
+                .filter(|item| matches_filters(item, &state_borrow.filters))
+                .cloned()
+                .collect();
+
+            // Update UI with filtered items
+            let items_model = Rc::new(VecModel::from(
+                filtered_items
                     .iter()
-                    .filter(|item| matches_filters(item, &state_borrow.filters))
-                    .cloned()
-                    .collect();
+                    .map(|item| StandardListViewItem::from(SharedString::from(&item.name)))
+                    .collect::<Vec<_>>(),
+            ));
+            main_window.set_items_list(items_model.into());
 
-                // Update UI with filtered items
-                let items_model = Rc::new(VecModel::from(
-                    filtered_items
-                        .iter()
-                        .map(|item| StandardListViewItem::from(SharedString::from(&item.name)))
-                        .collect::<Vec<_>>(),
-                ));
-                main_window.set_items_list(items_model.into());
-
-                // Update active filters text
-                let mut filter_parts = Vec::new();
-                if !genera.is_empty() {
-                    filter_parts.push(format!("Genus: {}", genera.join(" OR ")));
-                }
-                for (facet_name, values) in &facet_map {
-                    filter_parts.push(format!("{}: {}", facet_name, values.join(" OR ")));
-                }
-                let filters_text = if filter_parts.is_empty() {
-                    String::new()
-                } else {
-                    filter_parts.join("; ")
-                };
-                main_window.set_active_filters_text(SharedString::from(filters_text));
-
-                set_status(
-                    &main_window,
-                    format!("Filters applied: {} items match", filtered_items.len()),
-                    StatusLevel::Info,
-                );
+            // Update active filters text
+            let mut filter_parts = Vec::new();
+            if !genera.is_empty() {
+                filter_parts.push(format!("Genus: {}", genera.join(" OR ")));
             }
+            for (facet_name, values) in &facet_map {
+                filter_parts.push(format!("{}: {}", facet_name, values.join(" OR ")));
+            }
+            let filters_text = if filter_parts.is_empty() {
+                String::new()
+            } else {
+                filter_parts.join("; ")
+            };
+            main_window.set_active_filters_text(SharedString::from(filters_text));
+
+            set_status(
+                &main_window,
+                format!("Filters applied: {} items match", filtered_items.len()),
+                StatusLevel::Info,
+            );
         }
     });
 }

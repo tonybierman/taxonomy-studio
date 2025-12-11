@@ -64,27 +64,17 @@ struct Cli {
 fn main() {
     let cli = Cli::parse();
 
-    let taxonomy = load_taxonomy(&cli.file).unwrap_or_else(|err| {
-        eprintln!("Error loading taxonomy from '{}': {}", cli.file, err);
+    let (data, schema) = load_data_with_auto_schema(&cli.file).unwrap_or_else(|err| {
+        eprintln!("Error loading data from '{}': {}", cli.file, err);
         process::exit(1);
     });
-
-    // Validate the taxonomy schema
-    if let Err(errors) = validate_taxonomy(&taxonomy) {
-        eprintln!("Schema validation failed:\n");
-        for (i, error) in errors.iter().enumerate() {
-            eprintln!("  {}. {}", i + 1, error);
-        }
-        eprintln!("\nPlease fix these errors and try again.");
-        process::exit(1);
-    }
 
     let filters = parse_filters(&cli);
 
     if has_filters(&filters) || cli.sort_by.is_some() || cli.group_by.is_some() {
-        print_filtered_taxonomy(&taxonomy, &filters, &cli);
+        print_filtered_data(&data, &schema, &filters, &cli);
     } else {
-        print_taxonomy(&taxonomy);
+        print_data(&data, &schema);
     }
 }
 
@@ -107,7 +97,7 @@ fn parse_filters(cli: &Cli) -> Filters {
     }
 }
 
-fn print_filtered_taxonomy(taxonomy: &HybridTaxonomy, filters: &Filters, cli: &Cli) {
+fn print_filtered_data(data: &TaxonomyData, _schema: &TaxonomySchema, filters: &Filters, cli: &Cli) {
     println!("# Filtered Results\n");
 
     if has_filters(filters) {
@@ -133,34 +123,31 @@ fn print_filtered_taxonomy(taxonomy: &HybridTaxonomy, filters: &Filters, cli: &C
         println!("**Grouped by:** {}\n", group_field);
     }
 
-    if let Some(examples) = &taxonomy.example_items {
-        let mut filtered_items: Vec<_> = examples
-            .iter()
-            .filter(|item| matches_filters(item, filters))
-            .cloned()
-            .collect();
+    let mut filtered_items: Vec<_> = data
+        .items
+        .iter()
+        .filter(|item| matches_filters(item, filters))
+        .cloned()
+        .collect();
 
-        println!("**Matching Items:** {}\n", filtered_items.len());
+    println!("**Matching Items:** {}\n", filtered_items.len());
 
-        if filtered_items.is_empty() {
-            println!("_No items match the specified filters._\n");
+    if filtered_items.is_empty() {
+        println!("_No items match the specified filters._\n");
+    } else {
+        // Apply sorting
+        if let Some(sort_field) = &cli.sort_by {
+            sort_items(&mut filtered_items, sort_field);
+        }
+
+        // Apply grouping or direct display
+        if let Some(group_field) = &cli.group_by {
+            print_grouped_items(&filtered_items, group_field);
         } else {
-            // Apply sorting
-            if let Some(sort_field) = &cli.sort_by {
-                sort_items(&mut filtered_items, sort_field);
-            }
-
-            // Apply grouping or direct display
-            if let Some(group_field) = &cli.group_by {
-                print_grouped_items(&filtered_items, group_field);
-            } else {
-                for item in filtered_items.iter() {
-                    print_example_item(item);
-                }
+            for item in filtered_items.iter() {
+                print_example_item(item);
             }
         }
-    } else {
-        println!("\n_No example items found in taxonomy._\n");
     }
 }
 
@@ -179,19 +166,19 @@ fn print_grouped_items(items: &[Item], group_field: &str) {
     }
 }
 
-fn print_taxonomy(taxonomy: &HybridTaxonomy) {
+fn print_data(data: &TaxonomyData, schema: &TaxonomySchema) {
     println!("# Hybrid Taxonomy\n");
 
-    if let Some(desc) = &taxonomy.taxonomy_description {
+    if let Some(desc) = &schema.description {
         println!("## Description\n");
         println!("{}\n", desc);
     }
 
     println!("## Classical Hierarchy\n");
 
-    println!("**Root:** {}\n", taxonomy.classical_hierarchy.root);
+    println!("**Root:** {}\n", schema.classical_hierarchy.root);
 
-    if let Some(children) = &taxonomy.classical_hierarchy.children {
+    if let Some(children) = &schema.classical_hierarchy.children {
         for child in children {
             print_hierarchy_node(child, 1);
         }
@@ -199,7 +186,7 @@ fn print_taxonomy(taxonomy: &HybridTaxonomy) {
 
     println!("\n## Faceted Dimensions\n");
 
-    let mut facets: Vec<_> = taxonomy.faceted_dimensions.iter().collect();
+    let mut facets: Vec<_> = schema.faceted_dimensions.iter().collect();
     facets.sort_by_key(|(name, _)| *name);
 
     for (facet_name, values) in facets {
@@ -210,18 +197,16 @@ fn print_taxonomy(taxonomy: &HybridTaxonomy) {
         println!();
     }
 
-    if let Some(examples) = &taxonomy.example_items {
-        println!("## Example Items\n");
+    println!("## Items\n");
 
-        for item in examples.iter() {
-            print_example_item(item);
-        }
+    for item in data.items.iter() {
+        print_example_item(item);
     }
 
-    if !taxonomy.extra.is_empty() {
+    if !data.extra.is_empty() {
         println!("## Additional Information\n");
 
-        for (key, value) in &taxonomy.extra {
+        for (key, value) in &data.extra {
             println!("### {}\n", key);
             print_json_value(value, 0);
             println!();

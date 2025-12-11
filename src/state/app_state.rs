@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use taxstud_core::*;
 
@@ -5,10 +6,14 @@ use taxstud_core::*;
 /// This struct contains only domain/business logic state
 #[derive(Debug)]
 pub struct AppState {
-    /// Currently loaded taxonomy
-    pub taxonomy: Option<HybridTaxonomy>,
-    /// Path to current file
+    /// Currently loaded schema (classical hierarchy + facet dimensions)
+    pub schema: Option<TaxonomySchema>,
+    /// Currently loaded data (items only)
+    pub data: Option<TaxonomyData>,
+    /// Path to current data file
     pub current_file: Option<PathBuf>,
+    /// Path to current schema file (for reference)
+    pub schema_file: Option<PathBuf>,
     /// Whether there are unsaved changes
     pub dirty: bool,
     /// Currently selected item index
@@ -20,78 +25,91 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Self {
         Self {
-            taxonomy: None,
+            schema: None,
+            data: None,
             current_file: None,
+            schema_file: None,
             dirty: false,
             selected_item: None,
             filters: Filters {
                 genera: Vec::new(),
-                facets: std::collections::HashMap::new(),
+                facets: HashMap::new(),
             },
         }
     }
 
-    /// Load a taxonomy from file
+    /// Load a data file with its schema
     pub fn load_from_file(&mut self, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        let taxonomy = load_taxonomy(&path)?;
+        let (data, schema) = load_data_with_auto_schema(&path)?;
 
-        // Validate the taxonomy
-        validate_taxonomy(&taxonomy)
-            .map_err(|errors| format!("Validation failed:\n{}", errors.join("\n")))?;
+        self.data = Some(data.clone());
+        self.schema = Some(schema);
+        self.current_file = Some(path.clone());
 
-        self.taxonomy = Some(taxonomy);
-        self.current_file = Some(path);
+        // Reconstruct schema_file path
+        let data_dir = path.parent().unwrap();
+        self.schema_file = Some(data_dir.join(&data.schema));
+
         self.dirty = false;
         self.selected_item = None;
 
         Ok(())
     }
 
-    /// Save taxonomy to current file
+    /// Save data to current file
     pub fn save(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(ref taxonomy) = self.taxonomy {
+        if let Some(ref data) = self.data {
             if let Some(ref path) = self.current_file {
-                save_taxonomy(taxonomy, path)?;
+                save_data(data, path)?;
                 self.dirty = false;
                 Ok(())
             } else {
                 Err("No file path set".into())
             }
         } else {
-            Err("No taxonomy to save".into())
+            Err("No data to save".into())
         }
     }
 
-    /// Save taxonomy to a new file
+    /// Save data to a new file
     pub fn save_as(&mut self, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(ref taxonomy) = self.taxonomy {
-            save_taxonomy(taxonomy, &path)?;
+        if let Some(ref data) = self.data {
+            save_data(data, &path)?;
             self.current_file = Some(path);
             self.dirty = false;
             Ok(())
         } else {
-            Err("No taxonomy to save".into())
+            Err("No data to save".into())
         }
     }
 
-    /// Create a new empty taxonomy
+    /// Create a new empty taxonomy with default schema
     pub fn create_new(&mut self) {
-        let new_taxonomy = HybridTaxonomy {
-            taxonomy_description: Some("New Taxonomy".to_string()),
+        let default_schema = TaxonomySchema {
+            schema_id: "default".to_string(),
+            title: "Default Schema".to_string(),
+            description: Some("Default taxonomy schema".to_string()),
             classical_hierarchy: ClassicalHierarchy {
                 root: "Root".to_string(),
                 children: None,
             },
-            faceted_dimensions: std::collections::HashMap::from([(
+            faceted_dimensions: HashMap::from([(
                 "category".to_string(),
                 vec!["uncategorized".to_string()],
             )]),
-            example_items: Some(Vec::new()),
-            extra: std::collections::HashMap::new(),
+            json_schema: None,
         };
 
-        self.taxonomy = Some(new_taxonomy);
+        let default_data = TaxonomyData {
+            schema: "schema.json".to_string(),
+            items: Vec::new(),
+            extra: HashMap::new(),
+        };
+
+        self.schema = Some(default_schema);
+        self.data = Some(default_data);
         self.current_file = None;
+        self.schema_file = None;
         self.dirty = true;
         self.selected_item = None;
     }
@@ -115,6 +133,26 @@ impl AppState {
         format!("Taxonomy Studio - {}{}", file_name, dirty_marker)
     }
 
+    /// Get a reference to items
+    pub fn get_items(&self) -> Option<&Vec<Item>> {
+        self.data.as_ref().map(|d| &d.items)
+    }
+
+    /// Get a mutable reference to items
+    pub fn get_items_mut(&mut self) -> Option<&mut Vec<Item>> {
+        self.data.as_mut().map(|d| &mut d.items)
+    }
+
+    /// Get a reference to the classical hierarchy
+    pub fn get_classical_hierarchy(&self) -> Option<&ClassicalHierarchy> {
+        self.schema.as_ref().map(|s| &s.classical_hierarchy)
+    }
+
+    /// Get a reference to faceted dimensions
+    pub fn get_faceted_dimensions(&self) -> Option<&HashMap<String, Vec<String>>> {
+        self.schema.as_ref().map(|s| &s.faceted_dimensions)
+    }
+
     /// Get a reference to an item by index
     #[allow(dead_code)]
     pub fn get_item(&self, index: i32) -> Option<&Item> {
@@ -122,10 +160,9 @@ impl AppState {
             return None;
         }
 
-        self.taxonomy
+        self.data
             .as_ref()
-            .and_then(|t| t.example_items.as_ref())
-            .and_then(|items| items.get(index as usize))
+            .and_then(|d| d.items.get(index as usize))
     }
 
     /// Get a mutable reference to an item by index
@@ -135,9 +172,8 @@ impl AppState {
             return None;
         }
 
-        self.taxonomy
+        self.data
             .as_mut()
-            .and_then(|t| t.example_items.as_mut())
-            .and_then(|items| items.get_mut(index as usize))
+            .and_then(|d| d.items.get_mut(index as usize))
     }
 }

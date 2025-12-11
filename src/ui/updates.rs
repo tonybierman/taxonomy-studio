@@ -35,54 +35,42 @@ pub fn update_ui_from_state(main_window: &MainWindow, state: &AppState) {
     main_window.set_selected_item_path(SharedString::from(""));
     main_window.set_selected_item_facets(SharedString::from(""));
 
-    if let Some(ref taxonomy) = state.taxonomy {
+    // Update from schema (if present)
+    if let Some(ref schema) = state.schema {
         // Update taxonomy description
-        let description = taxonomy.taxonomy_description.as_deref().unwrap_or("");
-
-        eprintln!("DEBUG: Setting taxonomy description: '{}'", description);
+        let description = schema.description.as_deref().unwrap_or("");
         main_window.set_taxonomy_description(SharedString::from(description));
 
         // Update hierarchy root
-        eprintln!(
-            "DEBUG: Setting hierarchy root: '{}'",
-            taxonomy.classical_hierarchy.root
-        );
-        main_window.set_hierarchy_root(SharedString::from(&taxonomy.classical_hierarchy.root));
+        main_window.set_hierarchy_root(SharedString::from(&schema.classical_hierarchy.root));
 
         // Update hierarchy tree
-        let tree_nodes = flatten_hierarchy(&taxonomy.classical_hierarchy);
+        let tree_nodes = flatten_hierarchy(&schema.classical_hierarchy);
         let tree_model = Rc::new(VecModel::from(tree_nodes));
         main_window.set_hierarchy_tree(tree_model.into());
 
         // Update facet dimensions
-        let facet_dims_text = format_facet_dimensions(&taxonomy.faceted_dimensions);
+        let facet_dims_text = format_facet_dimensions(&schema.faceted_dimensions);
         main_window.set_facet_dimensions_text(SharedString::from(facet_dims_text));
-
-        // Update items list
-        if let Some(ref items) = taxonomy.example_items {
-            eprintln!("DEBUG: Loading {} items", items.len());
-            for (i, item) in items.iter().enumerate() {
-                eprintln!("DEBUG: Item {}: '{}'", i, item.name);
-            }
-
-            let items_model = Rc::new(VecModel::from(
-                items
-                    .iter()
-                    .map(|item| StandardListViewItem::from(SharedString::from(&item.name)))
-                    .collect::<Vec<_>>(),
-            ));
-            main_window.set_items_list(items_model.into());
-        } else {
-            let empty_model = Rc::new(VecModel::<StandardListViewItem>::default());
-            main_window.set_items_list(empty_model.into());
-        }
     } else {
-        // Clear UI
+        // Clear schema-related UI
         main_window.set_taxonomy_description(SharedString::from(""));
         main_window.set_hierarchy_root(SharedString::from(""));
         let empty_tree_model = Rc::new(VecModel::<TreeNode>::default());
         main_window.set_hierarchy_tree(empty_tree_model.into());
         main_window.set_facet_dimensions_text(SharedString::from(""));
+    }
+
+    // Update items from data (if present)
+    if let Some(ref data) = state.data {
+        let items_model = Rc::new(VecModel::from(
+            data.items
+                .iter()
+                .map(|item| StandardListViewItem::from(SharedString::from(&item.name)))
+                .collect::<Vec<_>>(),
+        ));
+        main_window.set_items_list(items_model.into());
+    } else {
         let empty_model = Rc::new(VecModel::<StandardListViewItem>::default());
         main_window.set_items_list(empty_model.into());
     }

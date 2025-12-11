@@ -1,116 +1,13 @@
 {
-  "taxonomy_description": "Hybrid taxonomy for movies combining classical hierarchical structure with faceted classification",
-  "classical_hierarchy": {
-    "root": "Movie",
-    "children": [
-      {
-        "genus": "Movie",
-        "species": "Narrative Film",
-        "differentia": "tells a fictional or fictionalized story",
-        "children": [
-          {
-            "genus": "Narrative Film",
-            "species": "Drama",
-            "differentia": "focuses on realistic characters and emotional themes"
-          },
-          {
-            "genus": "Narrative Film",
-            "species": "Comedy",
-            "differentia": "primarily intended to amuse and entertain"
-          },
-          {
-            "genus": "Narrative Film",
-            "species": "Action",
-            "differentia": "emphasizes physical feats and stunts"
-          },
-          {
-            "genus": "Narrative Film",
-            "species": "Thriller",
-            "differentia": "creates suspense and tension"
-          },
-          {
-            "genus": "Narrative Film",
-            "species": "Horror",
-            "differentia": "intended to frighten or disturb"
-          },
-          {
-            "genus": "Narrative Film",
-            "species": "Science Fiction",
-            "differentia": "explores speculative or futuristic concepts"
-          },
-          {
-            "genus": "Narrative Film",
-            "species": "Fantasy",
-            "differentia": "features magical or supernatural elements"
-          },
-          {
-            "genus": "Narrative Film",
-            "species": "Romance",
-            "differentia": "centers on romantic relationships"
-          }
-        ]
-      },
-      {
-        "genus": "Movie",
-        "species": "Documentary",
-        "differentia": "presents factual information about real subjects",
-        "children": [
-          {
-            "genus": "Documentary",
-            "species": "Nature Documentary",
-            "differentia": "focuses on wildlife and natural environments"
-          },
-          {
-            "genus": "Documentary",
-            "species": "Historical Documentary",
-            "differentia": "examines past events and figures"
-          },
-          {
-            "genus": "Documentary",
-            "species": "Social Documentary",
-            "differentia": "explores social issues and human experiences"
-          }
-        ]
-      },
-      {
-        "genus": "Movie",
-        "species": "Animated Film",
-        "differentia": "created through animation rather than live action",
-        "children": [
-          {
-            "genus": "Animated Film",
-            "species": "Traditional Animation",
-            "differentia": "hand-drawn or 2D animation"
-          },
-          {
-            "genus": "Animated Film",
-            "species": "Computer Animation",
-            "differentia": "created using 3D CGI technology"
-          }
-        ]
-      }
-    ]
-  },
-  "faceted_dimensions": {
-    "runtime": ["short", "standard", "long", "epic"],
-    "target_audience": ["children", "family", "teen", "adult", "mature"],
-    "pacing": ["slow", "deliberate", "moderate", "fast", "frenetic"],
-    "tone": ["lighthearted", "humorous", "serious", "dark", "grim", "whimsical", "satirical", "somber", "heartwarming"],
-    "visual_style": ["naturalistic", "stylized", "noir", "colorful", "minimalist", "baroque", "surreal"],
-    "budget_scale": ["micro", "low", "medium", "high", "blockbuster"],
-    "critical_reception": ["poor", "mixed", "positive", "acclaimed", "masterpiece"],
-    "box_office": ["flop", "modest", "successful", "hit", "phenomenon"],
-    "era": ["silent", "golden_age", "new_hollywood", "modern", "contemporary"],
-    "setting_period": ["ancient", "medieval", "victorian", "early_20th", "mid_20th", "contemporary", "near_future", "far_future"],
-    "emotional_impact": ["uplifting", "heartwarming", "thought_provoking", "devastating", "terrifying", "thrilling", "melancholic"],
-    "narrative_complexity": ["simple", "straightforward", "moderate", "complex", "labyrinthine"],
-    "violence_level": ["none", "mild", "moderate", "intense", "extreme"],
-    "cultural_origin": ["hollywood", "european", "asian", "latin_american", "african", "middle_eastern", "indie"]
-  },
-  "example_items": [
+  "schema": "schema.json",
+  "items": [
     {
       "name": "The Shawshank Redemption",
-      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Drama"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -130,7 +27,11 @@
     },
     {
       "name": "Pulp Fiction",
-      "classical_path": ["Movie", "Narrative Film", "Thriller"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Thriller"
+      ],
       "facets": {
         "runtime": "long",
         "target_audience": "adult",
@@ -150,7 +51,11 @@
     },
     {
       "name": "Toy Story",
-      "classical_path": ["Movie", "Animated Film", "Computer Animation"],
+      "classical_path": [
+        "Movie",
+        "Animated Film",
+        "Computer Animation"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "family",
@@ -170,7 +75,11 @@
     },
     {
       "name": "The Dark Knight",
-      "classical_path": ["Movie", "Narrative Film", "Action"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Action"
+      ],
       "facets": {
         "runtime": "long",
         "target_audience": "adult",
@@ -190,7 +99,11 @@
     },
     {
       "name": "Spirited Away",
-      "classical_path": ["Movie", "Animated Film", "Traditional Animation"],
+      "classical_path": [
+        "Movie",
+        "Animated Film",
+        "Traditional Animation"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "family",
@@ -210,7 +123,11 @@
     },
     {
       "name": "Parasite",
-      "classical_path": ["Movie", "Narrative Film", "Thriller"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Thriller"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -230,7 +147,11 @@
     },
     {
       "name": "Inception",
-      "classical_path": ["Movie", "Narrative Film", "Science Fiction"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Science Fiction"
+      ],
       "facets": {
         "runtime": "long",
         "target_audience": "adult",
@@ -250,7 +171,11 @@
     },
     {
       "name": "The Grand Budapest Hotel",
-      "classical_path": ["Movie", "Narrative Film", "Comedy"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Comedy"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -270,7 +195,11 @@
     },
     {
       "name": "Get Out",
-      "classical_path": ["Movie", "Narrative Film", "Horror"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Horror"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -290,7 +219,11 @@
     },
     {
       "name": "The Lord of the Rings: The Fellowship of the Ring",
-      "classical_path": ["Movie", "Narrative Film", "Fantasy"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Fantasy"
+      ],
       "facets": {
         "runtime": "epic",
         "target_audience": "teen",
@@ -309,8 +242,12 @@
       }
     },
     {
-      "name": "Amélie",
-      "classical_path": ["Movie", "Narrative Film", "Romance"],
+      "name": "Am\u00e9lie",
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Romance"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -330,7 +267,11 @@
     },
     {
       "name": "Mad Max: Fury Road",
-      "classical_path": ["Movie", "Narrative Film", "Action"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Action"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -350,7 +291,11 @@
     },
     {
       "name": "Moonlight",
-      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Drama"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -370,7 +315,11 @@
     },
     {
       "name": "Planet Earth II",
-      "classical_path": ["Movie", "Documentary", "Nature Documentary"],
+      "classical_path": [
+        "Movie",
+        "Documentary",
+        "Nature Documentary"
+      ],
       "facets": {
         "runtime": "long",
         "target_audience": "family",
@@ -390,7 +339,11 @@
     },
     {
       "name": "Citizen Kane",
-      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Drama"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -410,7 +363,11 @@
     },
     {
       "name": "The Avengers",
-      "classical_path": ["Movie", "Narrative Film", "Action"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Action"
+      ],
       "facets": {
         "runtime": "long",
         "target_audience": "teen",
@@ -430,7 +387,11 @@
     },
     {
       "name": "Hereditary",
-      "classical_path": ["Movie", "Narrative Film", "Horror"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Horror"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -450,7 +411,11 @@
     },
     {
       "name": "Casablanca",
-      "classical_path": ["Movie", "Narrative Film", "Romance"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Romance"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -470,7 +435,11 @@
     },
     {
       "name": "Blade Runner 2049",
-      "classical_path": ["Movie", "Narrative Film", "Science Fiction"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Science Fiction"
+      ],
       "facets": {
         "runtime": "long",
         "target_audience": "adult",
@@ -490,7 +459,11 @@
     },
     {
       "name": "Roma",
-      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Drama"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -510,7 +483,11 @@
     },
     {
       "name": "The Big Lebowski",
-      "classical_path": ["Movie", "Narrative Film", "Comedy"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Comedy"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -530,7 +507,11 @@
     },
     {
       "name": "Crouching Tiger, Hidden Dragon",
-      "classical_path": ["Movie", "Narrative Film", "Action"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Action"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -550,7 +531,11 @@
     },
     {
       "name": "Pan's Labyrinth",
-      "classical_path": ["Movie", "Narrative Film", "Fantasy"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Fantasy"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -570,7 +555,11 @@
     },
     {
       "name": "Jaws",
-      "classical_path": ["Movie", "Narrative Film", "Thriller"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Thriller"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "teen",
@@ -590,7 +579,11 @@
     },
     {
       "name": "Coco",
-      "classical_path": ["Movie", "Animated Film", "Computer Animation"],
+      "classical_path": [
+        "Movie",
+        "Animated Film",
+        "Computer Animation"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "family",
@@ -610,7 +603,11 @@
     },
     {
       "name": "A Separation",
-      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Drama"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -630,7 +627,11 @@
     },
     {
       "name": "The Exorcist",
-      "classical_path": ["Movie", "Narrative Film", "Horror"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Horror"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -650,7 +651,11 @@
     },
     {
       "name": "Everything Everywhere All at Once",
-      "classical_path": ["Movie", "Narrative Film", "Science Fiction"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Science Fiction"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -670,7 +675,11 @@
     },
     {
       "name": "The Princess Bride",
-      "classical_path": ["Movie", "Narrative Film", "Fantasy"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Fantasy"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "family",
@@ -690,7 +699,11 @@
     },
     {
       "name": "Seven Samurai",
-      "classical_path": ["Movie", "Narrative Film", "Action"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Action"
+      ],
       "facets": {
         "runtime": "epic",
         "target_audience": "adult",
@@ -710,7 +723,11 @@
     },
     {
       "name": "12 Years a Slave",
-      "classical_path": ["Movie", "Documentary", "Historical Documentary"],
+      "classical_path": [
+        "Movie",
+        "Documentary",
+        "Historical Documentary"
+      ],
       "facets": {
         "runtime": "long",
         "target_audience": "adult",
@@ -730,7 +747,11 @@
     },
     {
       "name": "The Hangover",
-      "classical_path": ["Movie", "Narrative Film", "Comedy"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Comedy"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -750,7 +771,11 @@
     },
     {
       "name": "City of God",
-      "classical_path": ["Movie", "Narrative Film", "Drama"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Drama"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "adult",
@@ -770,7 +795,11 @@
     },
     {
       "name": "The Sixth Sense",
-      "classical_path": ["Movie", "Narrative Film", "Thriller"],
+      "classical_path": [
+        "Movie",
+        "Narrative Film",
+        "Thriller"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "teen",
@@ -790,7 +819,11 @@
     },
     {
       "name": "Wall-E",
-      "classical_path": ["Movie", "Animated Film", "Computer Animation"],
+      "classical_path": [
+        "Movie",
+        "Animated Film",
+        "Computer Animation"
+      ],
       "facets": {
         "runtime": "standard",
         "target_audience": "family",

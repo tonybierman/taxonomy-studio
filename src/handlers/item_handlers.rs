@@ -32,21 +32,19 @@ fn register_item_selected(window: &MainWindow, app_state: &Rc<RefCell<AppState>>
         let main_window = main_window_weak.unwrap();
         let state_borrow = app_state.borrow();
 
-        if let Some(ref taxonomy) = state_borrow.taxonomy {
-            if let Some(ref items) = taxonomy.example_items {
-                if index >= 0 && (index as usize) < items.len() {
-                    let item = &items[index as usize];
+        if let Some(ref data) = state_borrow.data {
+            if index >= 0 && (index as usize) < data.items.len() {
+                let item = &data.items[index as usize];
 
-                    // Update selected item properties
-                    main_window.set_selected_item_name(SharedString::from(&item.name));
-                    main_window.set_selected_item_path(SharedString::from(
-                        item.classical_path.join(" → "),
-                    ));
+                // Update selected item properties
+                main_window.set_selected_item_name(SharedString::from(&item.name));
+                main_window.set_selected_item_path(SharedString::from(
+                    item.classical_path.join(" → "),
+                ));
 
-                    // Format facets
-                    let facets_text = format_facets(&item.facets);
-                    main_window.set_selected_item_facets(SharedString::from(facets_text));
-                }
+                // Format facets
+                let facets_text = format_facets(&item.facets);
+                main_window.set_selected_item_facets(SharedString::from(facets_text));
             }
         }
     });
@@ -62,28 +60,26 @@ fn register_start_edit(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) {
         let state_borrow = app_state.borrow();
 
         // Get the currently selected item
-        if let Some(ref taxonomy) = state_borrow.taxonomy {
-            if let Some(ref items) = taxonomy.example_items {
-                let selected_idx = main_window.get_selected_item_index();
-                if selected_idx >= 0 && (selected_idx as usize) < items.len() {
-                    let item = &items[selected_idx as usize];
+        if let (Some(ref data), Some(ref schema)) = (&state_borrow.data, &state_borrow.schema) {
+            let selected_idx = main_window.get_selected_item_index();
+            if selected_idx >= 0 && (selected_idx as usize) < data.items.len() {
+                let item = &data.items[selected_idx as usize];
 
-                    // Populate edit fields
-                    main_window.set_edit_item_name(SharedString::from(&item.name));
-                    main_window
-                        .set_edit_item_path(SharedString::from(item.classical_path.join(", ")));
+                // Populate edit fields
+                main_window.set_edit_item_name(SharedString::from(&item.name));
+                main_window
+                    .set_edit_item_path(SharedString::from(item.classical_path.join(", ")));
 
-                    // Populate facet inputs based on taxonomy dimensions
-                    let facet_inputs =
-                        create_facet_inputs(&taxonomy.faceted_dimensions, &item.facets);
-                    let facet_inputs_model = Rc::new(VecModel::from(facet_inputs));
-                    main_window.set_edit_facet_inputs(facet_inputs_model.into());
+                // Populate facet inputs based on schema dimensions
+                let facet_inputs =
+                    create_facet_inputs(&schema.faceted_dimensions, &item.facets);
+                let facet_inputs_model = Rc::new(VecModel::from(facet_inputs));
+                main_window.set_edit_facet_inputs(facet_inputs_model.into());
 
-                    // Enter edit mode
-                    main_window.set_is_editing(true);
-                    main_window.set_validation_error(SharedString::from(""));
-                    set_status(&main_window, "Editing item...", StatusLevel::Info);
-                }
+                // Enter edit mode
+                main_window.set_is_editing(true);
+                main_window.set_validation_error(SharedString::from(""));
+                set_status(&main_window, "Editing item...", StatusLevel::Info);
             }
         }
     });
@@ -114,57 +110,53 @@ fn register_save_edit(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) {
         // Collect facets from inputs using validation module
         let facets_map = collect_facets(&facet_inputs);
 
-        // Update the item in the taxonomy
+        // Update the item in the data
         let mut state_mut = app_state.borrow_mut();
-        if let Some(ref mut taxonomy) = state_mut.taxonomy {
-            if let Some(ref mut items) = taxonomy.example_items {
-                let selected_idx = main_window.get_selected_item_index();
-                if selected_idx >= 0 && (selected_idx as usize) < items.len() {
-                    let item = &mut items[selected_idx as usize];
-                    item.name = validated_name.clone();
-                    item.classical_path = classical_path;
-                    item.facets = facets_map;
+        if let Some(ref mut data) = state_mut.data {
+            let selected_idx = main_window.get_selected_item_index();
+            if selected_idx >= 0 && (selected_idx as usize) < data.items.len() {
+                let item = &mut data.items[selected_idx as usize];
+                item.name = validated_name.clone();
+                item.classical_path = classical_path;
+                item.facets = facets_map;
 
-                    // Mark as dirty
-                    state_mut.mark_dirty();
+                // Mark as dirty
+                state_mut.mark_dirty();
 
-                    // Exit edit mode
-                    drop(state_mut);
-                    main_window.set_is_editing(false);
+                // Exit edit mode
+                drop(state_mut);
+                main_window.set_is_editing(false);
 
-                    // Update window title
-                    let title = app_state.borrow().get_window_title();
-                    main_window.set_window_title(SharedString::from(title));
+                // Update window title
+                let title = app_state.borrow().get_window_title();
+                main_window.set_window_title(SharedString::from(title));
 
-                    // Refresh the UI
-                    update_ui_from_state(&main_window, &app_state.borrow());
+                // Refresh the UI
+                update_ui_from_state(&main_window, &app_state.borrow());
 
-                    // Re-select the edited item
-                    main_window.set_selected_item_index(selected_idx);
+                // Re-select the edited item
+                main_window.set_selected_item_index(selected_idx);
 
-                    // Trigger item selection to update details panel
-                    let state_borrow = app_state.borrow();
-                    if let Some(ref taxonomy) = state_borrow.taxonomy {
-                        if let Some(ref items) = taxonomy.example_items {
-                            if selected_idx >= 0 && (selected_idx as usize) < items.len() {
-                                let item = &items[selected_idx as usize];
-                                main_window.set_selected_item_name(SharedString::from(&item.name));
-                                main_window.set_selected_item_path(SharedString::from(
-                                    item.classical_path.join(" → "),
-                                ));
-                                let facets_text = format_facets(&item.facets);
-                                main_window
-                                    .set_selected_item_facets(SharedString::from(facets_text));
-                            }
-                        }
+                // Trigger item selection to update details panel
+                let state_borrow = app_state.borrow();
+                if let Some(ref data) = state_borrow.data {
+                    if selected_idx >= 0 && (selected_idx as usize) < data.items.len() {
+                        let item = &data.items[selected_idx as usize];
+                        main_window.set_selected_item_name(SharedString::from(&item.name));
+                        main_window.set_selected_item_path(SharedString::from(
+                            item.classical_path.join(" → "),
+                        ));
+                        let facets_text = format_facets(&item.facets);
+                        main_window
+                            .set_selected_item_facets(SharedString::from(facets_text));
                     }
-
-                    set_status(
-                        &main_window,
-                        "Item saved successfully",
-                        StatusLevel::Success,
-                    );
                 }
+
+                set_status(
+                    &main_window,
+                    "Item saved successfully",
+                    StatusLevel::Success,
+                );
             }
         }
     });
@@ -198,10 +190,10 @@ fn register_start_create_item(window: &MainWindow, app_state: &Rc<RefCell<AppSta
         main_window.set_new_item_path(SharedString::from(""));
         main_window.set_validation_error(SharedString::from(""));
 
-        // Populate facet inputs based on taxonomy dimensions
-        if let Some(ref taxonomy) = state_borrow.taxonomy {
+        // Populate facet inputs based on schema dimensions
+        if let Some(ref schema) = state_borrow.schema {
             let empty_facets = std::collections::HashMap::new();
-            let facet_inputs = create_facet_inputs(&taxonomy.faceted_dimensions, &empty_facets);
+            let facet_inputs = create_facet_inputs(&schema.faceted_dimensions, &empty_facets);
             let facet_inputs_model = Rc::new(VecModel::from(facet_inputs));
             main_window.set_create_facet_inputs(facet_inputs_model.into());
         }
@@ -245,14 +237,10 @@ fn register_save_new_item(window: &MainWindow, app_state: &Rc<RefCell<AppState>>
             extra: std::collections::HashMap::new(),
         };
 
-        // Add to taxonomy
+        // Add to data
         let mut state_mut = app_state.borrow_mut();
-        if let Some(ref mut taxonomy) = state_mut.taxonomy {
-            if let Some(ref mut items) = taxonomy.example_items {
-                items.push(new_item);
-            } else {
-                taxonomy.example_items = Some(vec![new_item]);
-            }
+        if let Some(ref mut data) = state_mut.data {
+            data.items.push(new_item);
 
             // Mark as dirty
             state_mut.mark_dirty();
@@ -302,13 +290,9 @@ fn register_delete_item(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) 
         // Get item name for confirmation message
         let item_name = {
             let state_borrow = app_state.borrow();
-            if let Some(ref taxonomy) = state_borrow.taxonomy {
-                if let Some(ref items) = taxonomy.example_items {
-                    if (selected_idx as usize) < items.len() {
-                        items[selected_idx as usize].name.clone()
-                    } else {
-                        return;
-                    }
+            if let Some(ref data) = state_borrow.data {
+                if (selected_idx as usize) < data.items.len() {
+                    data.items[selected_idx as usize].name.clone()
                 } else {
                     return;
                 }
@@ -320,25 +304,23 @@ fn register_delete_item(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) 
         // For now, delete without confirmation (we can add a dialog later)
         // In a real app, you'd use a confirmation dialog here
         let mut state_mut = app_state.borrow_mut();
-        if let Some(ref mut taxonomy) = state_mut.taxonomy {
-            if let Some(ref mut items) = taxonomy.example_items {
-                if (selected_idx as usize) < items.len() {
-                    items.remove(selected_idx as usize);
+        if let Some(ref mut data) = state_mut.data {
+            if (selected_idx as usize) < data.items.len() {
+                data.items.remove(selected_idx as usize);
 
-                    // Mark as dirty
-                    state_mut.mark_dirty();
+                // Mark as dirty
+                state_mut.mark_dirty();
 
-                    // Exit and update
-                    drop(state_mut);
+                // Exit and update
+                drop(state_mut);
 
-                    // Refresh UI and show success message
-                    refresh_ui_after_state_change(
-                        &main_window,
-                        &app_state,
-                        &format!("Item '{}' deleted", item_name),
-                        StatusLevel::Success,
-                    );
-                }
+                // Refresh UI and show success message
+                refresh_ui_after_state_change(
+                    &main_window,
+                    &app_state,
+                    &format!("Item '{}' deleted", item_name),
+                    StatusLevel::Success,
+                );
             }
         }
     });
