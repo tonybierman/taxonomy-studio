@@ -10,6 +10,7 @@ use std::rc::Rc;
 use taxstud_core::*;
 
 use errors::{map_file_load_error, map_file_save_error, map_revert_error};
+use state::{AppState, UiState, PendingAction, SimpleConfirmationAction};
 use ui::{
     create_facet_inputs, format_facets, hide_confirmation, hide_error, hide_simple_confirmation,
     refresh_ui_after_state_change, set_status, show_confirmation, show_error,
@@ -28,185 +29,28 @@ struct Args {
     file: Option<PathBuf>,
 }
 
-/// Represents a pending action waiting for confirmation
-#[derive(Debug, Clone)]
-pub enum PendingAction {
-    Open,
-    New,
-}
-
-/// Represents an action for simple confirmation dialog
-#[derive(Debug, Clone)]
-pub enum SimpleConfirmationAction {
-    Revert,
-}
-
-/// Application state management
-#[derive(Debug)]
-pub struct AppState {
-    /// Currently loaded taxonomy
-    pub taxonomy: Option<HybridTaxonomy>,
-    /// Path to current file
-    pub current_file: Option<PathBuf>,
-    /// Whether there are unsaved changes
-    pub dirty: bool,
-    /// Currently selected item index
-    pub selected_item: Option<usize>,
-    /// Active filters
-    pub filters: Filters,
-    /// Pending action awaiting user confirmation
-    pub pending_action: Option<PendingAction>,
-    /// Simple confirmation action
-    pub simple_confirmation_action: Option<SimpleConfirmationAction>,
-}
-
-impl AppState {
-    fn new() -> Self {
-        Self {
-            taxonomy: None,
-            current_file: None,
-            dirty: false,
-            selected_item: None,
-            filters: Filters {
-                genera: Vec::new(),
-                facets: std::collections::HashMap::new(),
-            },
-            pending_action: None,
-            simple_confirmation_action: None,
-        }
-    }
-
-    /// Load a taxonomy from file
-    fn load_from_file(&mut self, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        let taxonomy = load_taxonomy(&path)?;
-
-        // Validate the taxonomy
-        validate_taxonomy(&taxonomy).map_err(|errors| {
-            format!("Validation failed:\n{}", errors.join("\n"))
-        })?;
-
-        self.taxonomy = Some(taxonomy);
-        self.current_file = Some(path);
-        self.dirty = false;
-        self.selected_item = None;
-
-        Ok(())
-    }
-
-    /// Save taxonomy to current file
-    fn save(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(ref taxonomy) = self.taxonomy {
-            if let Some(ref path) = self.current_file {
-                save_taxonomy(taxonomy, path)?;
-                self.dirty = false;
-                Ok(())
-            } else {
-                Err("No file path set".into())
-            }
-        } else {
-            Err("No taxonomy to save".into())
-        }
-    }
-
-    /// Save taxonomy to a new file
-    fn save_as(&mut self, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(ref taxonomy) = self.taxonomy {
-            save_taxonomy(taxonomy, &path)?;
-            self.current_file = Some(path);
-            self.dirty = false;
-            Ok(())
-        } else {
-            Err("No taxonomy to save".into())
-        }
-    }
-
-    /// Create a new empty taxonomy
-    fn create_new(&mut self) {
-        let new_taxonomy = HybridTaxonomy {
-            taxonomy_description: Some("New Taxonomy".to_string()),
-            classical_hierarchy: ClassicalHierarchy {
-                root: "Root".to_string(),
-                children: None,
-            },
-            faceted_dimensions: std::collections::HashMap::from([
-                ("category".to_string(), vec!["uncategorized".to_string()]),
-            ]),
-            example_items: Some(Vec::new()),
-            extra: std::collections::HashMap::new(),
-        };
-
-        self.taxonomy = Some(new_taxonomy);
-        self.current_file = None;
-        self.dirty = true;
-        self.selected_item = None;
-    }
-
-    /// Mark state as modified
-    fn mark_dirty(&mut self) {
-        self.dirty = true;
-    }
-
-    /// Get window title with file name and dirty indicator
-    fn get_window_title(&self) -> String {
-        let file_name = self.current_file
-            .as_ref()
-            .and_then(|p| p.file_name())
-            .and_then(|n| n.to_str())
-            .unwrap_or("Untitled");
-
-        let dirty_marker = if self.dirty { "*" } else { "" };
-
-        format!("Taxonomy Studio - {}{}", file_name, dirty_marker)
-    }
-
-    /// Get a reference to an item by index
-    #[allow(dead_code)]
-    fn get_item(&self, index: i32) -> Option<&Item> {
-        if index < 0 {
-            return None;
-        }
-
-        self.taxonomy
-            .as_ref()
-            .and_then(|t| t.example_items.as_ref())
-            .and_then(|items| items.get(index as usize))
-    }
-
-    /// Get a mutable reference to an item by index
-    #[allow(dead_code)]
-    fn get_item_mut(&mut self, index: i32) -> Option<&mut Item> {
-        if index < 0 {
-            return None;
-        }
-
-        self.taxonomy
-            .as_mut()
-            .and_then(|t| t.example_items.as_mut())
-            .and_then(|items| items.get_mut(index as usize))
-    }
-}
-
 pub fn main() {
     let args = Args::parse();
 
     let main_window = MainWindow::new().unwrap();
-    let state = Rc::new(RefCell::new(AppState::new()));
+    let app_state = Rc::new(RefCell::new(AppState::new()));
+    let ui_state = Rc::new(RefCell::new(UiState::new()));
 
     // Set initial window title
     main_window.set_window_title(SharedString::from("Taxonomy Studio - No file loaded"));
 
     // Load file from command line if provided
     if let Some(file_path) = args.file {
-        let load_result = state.borrow_mut().load_from_file(file_path.clone());
+        let load_result = app_state.borrow_mut().load_from_file(file_path.clone());
 
         match load_result {
             Ok(_) => {
                 // Update window title
-                let title = state.borrow().get_window_title();
+                let title = app_state.borrow().get_window_title();
                 main_window.set_window_title(SharedString::from(title));
 
                 // Update UI with loaded data
-                update_ui_from_state(&main_window, &state.borrow());
+                update_ui_from_state(&main_window, &app_state.borrow());
 
                 set_status(&main_window, format!("Loaded: {}", file_path.display()), StatusLevel::Success);
             }
@@ -219,11 +63,11 @@ pub fn main() {
     // Item selection handler
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_item_selected(move |index| {
             let main_window = main_window_weak.unwrap();
-            let state_borrow = state.borrow();
+            let state_borrow = app_state.borrow();
 
             if let Some(ref taxonomy) = state_borrow.taxonomy {
                 if let Some(ref items) = taxonomy.example_items {
@@ -248,22 +92,23 @@ pub fn main() {
     // File -> Open
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
+        let ui_state = ui_state.clone();
 
         main_window.on_file_open(move || {
             let main_window = main_window_weak.unwrap();
 
             // Check for unsaved changes
-            if state.borrow().dirty {
+            if app_state.borrow().dirty {
                 // Store pending action and show confirmation dialog
-                state.borrow_mut().pending_action = Some(PendingAction::Open);
+                ui_state.borrow_mut().pending_action = Some(PendingAction::Open);
                 show_confirmation(
                     &main_window,
                     "You have unsaved changes. Do you want to save before opening another file?",
                 );
             } else {
                 // No unsaved changes, proceed with open
-                let state = state.clone();
+                let app_state = app_state.clone();
                 slint::spawn_local(async move {
                     if let Some(file) = rfd::AsyncFileDialog::new()
                         .add_filter("JSON", &["json"])
@@ -274,16 +119,16 @@ pub fn main() {
                         let path = file.path().to_path_buf();
 
                         // Load the file (borrow mutably, then drop the borrow)
-                        let load_result = state.borrow_mut().load_from_file(path.clone());
+                        let load_result = app_state.borrow_mut().load_from_file(path.clone());
 
                         match load_result {
                             Ok(_) => {
                                 // Update window title (borrow immutably)
-                                let title = state.borrow().get_window_title();
+                                let title = app_state.borrow().get_window_title();
                                 main_window.set_window_title(SharedString::from(title));
 
                                 // Update UI with loaded data (borrow immutably)
-                                update_ui_from_state(&main_window, &state.borrow());
+                                update_ui_from_state(&main_window, &app_state.borrow());
 
                                 set_status(&main_window, "File loaded successfully", StatusLevel::Success);
                             }
@@ -302,16 +147,16 @@ pub fn main() {
     // File -> Save
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_file_save(move || {
             let main_window = main_window_weak.unwrap();
 
-            let save_result = state.borrow_mut().save();
+            let save_result = app_state.borrow_mut().save();
 
             match save_result {
                 Ok(_) => {
-                    let title = state.borrow().get_window_title();
+                    let title = app_state.borrow().get_window_title();
                     main_window.set_window_title(SharedString::from(title));
                     set_status(&main_window, "File saved successfully", StatusLevel::Success);
                 }
@@ -327,11 +172,11 @@ pub fn main() {
     // File -> Save As
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_file_save_as(move || {
             let main_window = main_window_weak.unwrap();
-            let state = state.clone();
+            let app_state = app_state.clone();
 
             slint::spawn_local(async move {
                 if let Some(file) = rfd::AsyncFileDialog::new()
@@ -342,11 +187,11 @@ pub fn main() {
                 {
                     let path = file.path().to_path_buf();
 
-                    let save_result = state.borrow_mut().save_as(path.clone());
+                    let save_result = app_state.borrow_mut().save_as(path.clone());
 
                     match save_result {
                         Ok(_) => {
-                            let title = state.borrow().get_window_title();
+                            let title = app_state.borrow().get_window_title();
                             main_window.set_window_title(SharedString::from(title));
                             set_status(&main_window, "File saved successfully", StatusLevel::Success);
                         }
@@ -364,15 +209,16 @@ pub fn main() {
     // File -> New
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
+        let ui_state = ui_state.clone();
 
         main_window.on_file_new(move || {
             let main_window = main_window_weak.unwrap();
 
             // Check for unsaved changes
-            if state.borrow().dirty {
+            if app_state.borrow().dirty {
                 // Store pending action and show confirmation dialog
-                state.borrow_mut().pending_action = Some(PendingAction::New);
+                ui_state.borrow_mut().pending_action = Some(PendingAction::New);
                 show_confirmation(
                     &main_window,
                     "You have unsaved changes. Do you want to save before creating a new taxonomy?",
@@ -380,13 +226,13 @@ pub fn main() {
             } else {
                 // No unsaved changes, proceed with creating new taxonomy
                 // Create new (drops mutable borrow immediately)
-                state.borrow_mut().create_new();
+                app_state.borrow_mut().create_new();
 
                 // Now borrow immutably
-                let title = state.borrow().get_window_title();
+                let title = app_state.borrow().get_window_title();
                 main_window.set_window_title(SharedString::from(title));
 
-                update_ui_from_state(&main_window, &state.borrow());
+                update_ui_from_state(&main_window, &app_state.borrow());
 
                 set_status(&main_window, "New taxonomy created", StatusLevel::Success);
             }
@@ -396,20 +242,21 @@ pub fn main() {
     // File -> Revert to Saved
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
+        let ui_state = ui_state.clone();
 
         main_window.on_file_revert(move || {
             let main_window = main_window_weak.unwrap();
 
             // Check if we have a file to revert to
             let can_revert = {
-                let state_borrow = state.borrow();
+                let state_borrow = app_state.borrow();
                 state_borrow.current_file.is_some() && state_borrow.dirty
             };
 
             if can_revert {
                 // Show confirmation dialog
-                state.borrow_mut().simple_confirmation_action = Some(SimpleConfirmationAction::Revert);
+                ui_state.borrow_mut().simple_confirmation_action = Some(SimpleConfirmationAction::Revert);
                 show_simple_confirmation(
                     &main_window,
                     "Revert to Saved",
@@ -418,7 +265,7 @@ pub fn main() {
                 );
             } else {
                 // Either no file or no changes
-                let state_borrow = state.borrow();
+                let state_borrow = app_state.borrow();
                 if state_borrow.current_file.is_none() {
                     set_status(&main_window, "No file to revert to", StatusLevel::Warning);
                 } else {
@@ -431,11 +278,11 @@ pub fn main() {
     // Sort -> By Name
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_sort_by_name(move || {
             let main_window = main_window_weak.unwrap();
-            let state_borrow = state.borrow();
+            let state_borrow = app_state.borrow();
 
             if let Some(ref taxonomy) = state_borrow.taxonomy {
                 if let Some(ref items) = taxonomy.example_items {
@@ -461,7 +308,7 @@ pub fn main() {
     // Apply Filters
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_apply_filters(move || {
             let main_window = main_window_weak.unwrap();
@@ -488,13 +335,13 @@ pub fn main() {
 
             // Update state filters
             {
-                let mut state_mut = state.borrow_mut();
+                let mut state_mut = app_state.borrow_mut();
                 state_mut.filters.genera = genera.clone();
                 state_mut.filters.facets = facet_map.clone();
             }
 
             // Apply filters
-            let state_borrow = state.borrow();
+            let state_borrow = app_state.borrow();
             if let Some(ref taxonomy) = state_borrow.taxonomy {
                 if let Some(ref items) = taxonomy.example_items {
                     let filtered_items: Vec<_> = items
@@ -535,7 +382,7 @@ pub fn main() {
     // Clear Filters
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_clear_filters(move || {
             let main_window = main_window_weak.unwrap();
@@ -546,13 +393,13 @@ pub fn main() {
             main_window.set_active_filters_text(SharedString::from(""));
 
             // Clear state filters
-            state.borrow_mut().filters = Filters {
+            app_state.borrow_mut().filters = Filters {
                 genera: Vec::new(),
                 facets: std::collections::HashMap::new(),
             };
 
             // Reset UI to show all items
-            update_ui_from_state(&main_window, &state.borrow());
+            update_ui_from_state(&main_window, &app_state.borrow());
 
             set_status(&main_window, "Filters cleared", StatusLevel::Info);
         });
@@ -561,11 +408,11 @@ pub fn main() {
     // Start Edit
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_start_edit(move || {
             let main_window = main_window_weak.unwrap();
-            let state_borrow = state.borrow();
+            let state_borrow = app_state.borrow();
 
             // Get the currently selected item
             if let Some(ref taxonomy) = state_borrow.taxonomy {
@@ -598,7 +445,7 @@ pub fn main() {
     // Save Edit
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_save_edit(move || {
             let main_window = main_window_weak.unwrap();
@@ -639,7 +486,7 @@ pub fn main() {
             }
 
             // Update the item in the taxonomy
-            let mut state_mut = state.borrow_mut();
+            let mut state_mut = app_state.borrow_mut();
             if let Some(ref mut taxonomy) = state_mut.taxonomy {
                 if let Some(ref mut items) = taxonomy.example_items {
                     let selected_idx = main_window.get_selected_item_index();
@@ -657,17 +504,17 @@ pub fn main() {
                         main_window.set_is_editing(false);
 
                         // Update window title
-                        let title = state.borrow().get_window_title();
+                        let title = app_state.borrow().get_window_title();
                         main_window.set_window_title(SharedString::from(title));
 
                         // Refresh the UI
-                        update_ui_from_state(&main_window, &state.borrow());
+                        update_ui_from_state(&main_window, &app_state.borrow());
 
                         // Re-select the edited item
                         main_window.set_selected_item_index(selected_idx);
 
                         // Trigger item selection to update details panel
-                        let state_borrow = state.borrow();
+                        let state_borrow = app_state.borrow();
                         if let Some(ref taxonomy) = state_borrow.taxonomy {
                             if let Some(ref items) = taxonomy.example_items {
                                 if selected_idx >= 0 && (selected_idx as usize) < items.len() {
@@ -706,11 +553,11 @@ pub fn main() {
     // Start Create Item
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_start_create_item(move || {
             let main_window = main_window_weak.unwrap();
-            let state_borrow = state.borrow();
+            let state_borrow = app_state.borrow();
 
             // Clear form fields
             main_window.set_new_item_name(SharedString::from(""));
@@ -734,7 +581,7 @@ pub fn main() {
     // Save New Item
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_save_new_item(move || {
             let main_window = main_window_weak.unwrap();
@@ -783,7 +630,7 @@ pub fn main() {
             };
 
             // Add to taxonomy
-            let mut state_mut = state.borrow_mut();
+            let mut state_mut = app_state.borrow_mut();
             if let Some(ref mut taxonomy) = state_mut.taxonomy {
                 if let Some(ref mut items) = taxonomy.example_items {
                     items.push(new_item);
@@ -801,7 +648,7 @@ pub fn main() {
                 // Refresh UI and show success message
                 refresh_ui_after_state_change(
                     &main_window,
-                    &state,
+                    &app_state,
                     &format!("Item '{}' created successfully", new_name),
                     StatusLevel::Success,
                 );
@@ -890,7 +737,7 @@ pub fn main() {
     // Delete Item
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
 
         main_window.on_delete_item(move || {
             let main_window = main_window_weak.unwrap();
@@ -902,7 +749,7 @@ pub fn main() {
 
             // Get item name for confirmation message
             let item_name = {
-                let state_borrow = state.borrow();
+                let state_borrow = app_state.borrow();
                 if let Some(ref taxonomy) = state_borrow.taxonomy {
                     if let Some(ref items) = taxonomy.example_items {
                         if (selected_idx as usize) < items.len() {
@@ -920,7 +767,7 @@ pub fn main() {
 
             // For now, delete without confirmation (we can add a dialog later)
             // In a real app, you'd use a confirmation dialog here
-            let mut state_mut = state.borrow_mut();
+            let mut state_mut = app_state.borrow_mut();
             if let Some(ref mut taxonomy) = state_mut.taxonomy {
                 if let Some(ref mut items) = taxonomy.example_items {
                     if (selected_idx as usize) < items.len() {
@@ -935,7 +782,7 @@ pub fn main() {
                         // Refresh UI and show success message
                         refresh_ui_after_state_change(
                             &main_window,
-                            &state,
+                            &app_state,
                             &format!("Item '{}' deleted", item_name),
                             StatusLevel::Success,
                         );
@@ -948,29 +795,30 @@ pub fn main() {
     // Confirmation Dialog - Save
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
+        let ui_state = ui_state.clone();
 
         main_window.on_confirmation_save(move || {
             let main_window = main_window_weak.unwrap();
 
             // Save the file first
-            let save_result = state.borrow_mut().save();
+            let save_result = app_state.borrow_mut().save();
 
             match save_result {
                 Ok(_) => {
                     // Update window title
-                    let title = state.borrow().get_window_title();
+                    let title = app_state.borrow().get_window_title();
                     main_window.set_window_title(SharedString::from(title));
 
                     // Hide confirmation dialog
                     hide_confirmation(&main_window);
 
                     // Now proceed with the pending action
-                    if let Some(action) = state.borrow_mut().pending_action.take() {
+                    if let Some(action) = ui_state.borrow_mut().pending_action.take() {
                         match action {
                             PendingAction::Open => {
                                 // Trigger file open
-                                let state = state.clone();
+                                let app_state = app_state.clone();
                                 slint::spawn_local(async move {
                                     if let Some(file) = rfd::AsyncFileDialog::new()
                                         .add_filter("JSON", &["json"])
@@ -979,13 +827,13 @@ pub fn main() {
                                         .await
                                     {
                                         let path = file.path().to_path_buf();
-                                        let load_result = state.borrow_mut().load_from_file(path.clone());
+                                        let load_result = app_state.borrow_mut().load_from_file(path.clone());
 
                                         match load_result {
                                             Ok(_) => {
-                                                let title = state.borrow().get_window_title();
+                                                let title = app_state.borrow().get_window_title();
                                                 main_window.set_window_title(SharedString::from(title));
-                                                update_ui_from_state(&main_window, &state.borrow());
+                                                update_ui_from_state(&main_window, &app_state.borrow());
                                                 set_status(&main_window, "File loaded successfully", StatusLevel::Success);
                                             }
                                             Err(e) => {
@@ -998,10 +846,10 @@ pub fn main() {
                             }
                             PendingAction::New => {
                                 // Create new taxonomy
-                                state.borrow_mut().create_new();
-                                let title = state.borrow().get_window_title();
+                                app_state.borrow_mut().create_new();
+                                let title = app_state.borrow().get_window_title();
                                 main_window.set_window_title(SharedString::from(title));
-                                update_ui_from_state(&main_window, &state.borrow());
+                                update_ui_from_state(&main_window, &app_state.borrow());
                                 set_status(&main_window, "New taxonomy created", StatusLevel::Success);
                             }
                         }
@@ -1016,7 +864,7 @@ pub fn main() {
                     show_error(&main_window, title, message, details);
 
                     // Clear pending action since we couldn't save
-                    state.borrow_mut().pending_action = None;
+                    ui_state.borrow_mut().pending_action = None;
                 }
             }
         });
@@ -1025,7 +873,8 @@ pub fn main() {
     // Confirmation Dialog - Don't Save
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
+        let ui_state = ui_state.clone();
 
         main_window.on_confirmation_dont_save(move || {
             let main_window = main_window_weak.unwrap();
@@ -1034,11 +883,11 @@ pub fn main() {
             hide_confirmation(&main_window);
 
             // Proceed with the pending action without saving
-            if let Some(action) = state.borrow_mut().pending_action.take() {
+            if let Some(action) = ui_state.borrow_mut().pending_action.take() {
                 match action {
                     PendingAction::Open => {
                         // Trigger file open
-                        let state = state.clone();
+                        let app_state = app_state.clone();
                         slint::spawn_local(async move {
                             if let Some(file) = rfd::AsyncFileDialog::new()
                                 .add_filter("JSON", &["json"])
@@ -1047,13 +896,13 @@ pub fn main() {
                                 .await
                             {
                                 let path = file.path().to_path_buf();
-                                let load_result = state.borrow_mut().load_from_file(path.clone());
+                                let load_result = app_state.borrow_mut().load_from_file(path.clone());
 
                                 match load_result {
                                     Ok(_) => {
-                                        let title = state.borrow().get_window_title();
+                                        let title = app_state.borrow().get_window_title();
                                         main_window.set_window_title(SharedString::from(title));
-                                        update_ui_from_state(&main_window, &state.borrow());
+                                        update_ui_from_state(&main_window, &app_state.borrow());
                                         set_status(&main_window, "File loaded successfully", StatusLevel::Success);
                                     }
                                     Err(e) => {
@@ -1066,10 +915,10 @@ pub fn main() {
                     }
                     PendingAction::New => {
                         // Create new taxonomy
-                        state.borrow_mut().create_new();
-                        let title = state.borrow().get_window_title();
+                        app_state.borrow_mut().create_new();
+                        let title = app_state.borrow().get_window_title();
                         main_window.set_window_title(SharedString::from(title));
-                        update_ui_from_state(&main_window, &state.borrow());
+                        update_ui_from_state(&main_window, &app_state.borrow());
                         set_status(&main_window, "New taxonomy created", StatusLevel::Success);
                     }
                 }
@@ -1080,7 +929,8 @@ pub fn main() {
     // Confirmation Dialog - Cancel
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let _app_state = app_state.clone();
+        let ui_state = ui_state.clone();
 
         main_window.on_confirmation_cancel(move || {
             let main_window = main_window_weak.unwrap();
@@ -1089,7 +939,7 @@ pub fn main() {
             hide_confirmation(&main_window);
 
             // Clear pending action
-            state.borrow_mut().pending_action = None;
+            ui_state.borrow_mut().pending_action = None;
 
             set_status(&main_window, "Action cancelled", StatusLevel::Info);
         });
@@ -1110,7 +960,8 @@ pub fn main() {
     // Simple Confirmation - OK
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let app_state = app_state.clone();
+        let ui_state = ui_state.clone();
 
         main_window.on_simple_confirmation_ok(move || {
             let main_window = main_window_weak.unwrap();
@@ -1119,27 +970,27 @@ pub fn main() {
             hide_simple_confirmation(&main_window);
 
             // Get the action and drop the borrow immediately
-            let action = state.borrow_mut().simple_confirmation_action.take();
+            let action = ui_state.borrow_mut().simple_confirmation_action.take();
 
             // Execute the action
             if let Some(action) = action {
                 match action {
                     SimpleConfirmationAction::Revert => {
                         // Get the file path (borrow immutably, then drop)
-                        let path = state.borrow().current_file.clone();
+                        let path = app_state.borrow().current_file.clone();
 
                         if let Some(file_path) = path {
                             // Now borrow mutably to reload
-                            let load_result = state.borrow_mut().load_from_file(file_path.clone());
+                            let load_result = app_state.borrow_mut().load_from_file(file_path.clone());
 
                             match load_result {
                                 Ok(_) => {
                                     // Update window title
-                                    let title = state.borrow().get_window_title();
+                                    let title = app_state.borrow().get_window_title();
                                     main_window.set_window_title(SharedString::from(title));
 
                                     // Update UI with loaded data
-                                    update_ui_from_state(&main_window, &state.borrow());
+                                    update_ui_from_state(&main_window, &app_state.borrow());
 
                                     set_status(&main_window, "Reverted to saved version", StatusLevel::Success);
                                 }
@@ -1159,7 +1010,8 @@ pub fn main() {
     // Simple Confirmation - Cancel
     {
         let main_window_weak = main_window.as_weak();
-        let state = state.clone();
+        let _app_state = app_state.clone();
+        let ui_state = ui_state.clone();
 
         main_window.on_simple_confirmation_cancel(move || {
             let main_window = main_window_weak.unwrap();
@@ -1168,7 +1020,7 @@ pub fn main() {
             hide_simple_confirmation(&main_window);
 
             // Clear action
-            state.borrow_mut().simple_confirmation_action = None;
+            ui_state.borrow_mut().simple_confirmation_action = None;
 
             set_status(&main_window, "Action cancelled", StatusLevel::Info);
         });

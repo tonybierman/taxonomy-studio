@@ -1,5 +1,5 @@
-// This module will be further refactored in Phase 3
-// For now, AppState and related types are defined in main.rs
+pub mod app_state;
+pub mod ui_state;
 
-// Re-export AppState from main for use in ui modules
-pub use crate::AppState;
+pub use app_state::AppState;
+pub use ui_state::{UiState, PendingAction, SimpleConfirmationAction};
