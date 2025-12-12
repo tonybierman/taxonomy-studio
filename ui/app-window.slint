@@ -1,5 +1,7 @@
 // TaxStud - Hybrid Taxonomy Management System
 import { LineEdit, Button, StandardListView, GridBox, HorizontalBox, VerticalBox, ScrollView } from "std-widgets.slint";
+import { TreeNode } from "common.slint";
+import { TreeNodeBox } from "tree-node-box.slint";
 import { Style, Theme, Palette } from "theme.slint";
 
 export enum StatusLevel { none, success, info, warning, danger }
@@ -12,11 +14,6 @@ export struct StatusMessage {
 export struct FacetInput {
     name: string,
     value: string,
-}
-
-export struct TreeNode {
-    label: string,
-    indent-level: int,
 }
 
 export component MainWindow inherits Window {
@@ -254,17 +251,10 @@ export component MainWindow inherits Window {
                                 }
                             }
 
-                            // Tree nodes
-                            for node in root.hierarchy-tree : HorizontalBox {
-                                padding-left: 4px + (node.indent-level * 16px);
-                                padding-top: 2px;
-                                padding-bottom: 2px;
-
-                                Text {
-                                    text: "├─ " + node.label;
-                                    color: palette.text-secondary;
-                                    font-size: 11px;
-                                }
+                            for node in root.hierarchy-tree : TreeNodeBox {
+                                node: node;
+                                text-color: palette.text-secondary;
+                                font-size: 11px;
                             }
                         }
 

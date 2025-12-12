@@ -1,0 +1,23 @@
+import { LineEdit, Button, StandardListView, GridBox, HorizontalBox, VerticalBox, ScrollView } from "std-widgets.slint";
+import { TreeNode} from "common.slint";
+
+export component TreeNodeBox inherits HorizontalBox {
+
+    in-out property <TreeNode> node;
+    in-out property <brush> text-color;
+    in-out property <length> font-size;
+
+    private property <string> node-label;
+
+    padding-left: 4px + (
+    node.indent-level * 16px);
+    padding-top: 2px;
+    padding-bottom: 2px;
+    node-label: node.label == "" ? "Lorem Ipsum" : node.label;
+
+    Text {
+        text: "├─ " + node-label;
+        color: text-color;
+        font-size: font-size;
+    }
+}
