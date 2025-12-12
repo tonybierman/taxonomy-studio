@@ -1,5 +1,6 @@
 use slint::{Model, ModelRc};
 use std::collections::HashMap;
+use taxstud_core::{validate_path_exists, ClassicalHierarchy};
 
 use crate::FacetInput;
 
@@ -22,6 +23,7 @@ impl std::error::Error for ValidationError {}
 pub fn validate_item_input(
     name: &str,
     path_str: &str,
+    hierarchy: &ClassicalHierarchy,
 ) -> Result<(String, Vec<String>), ValidationError> {
     // Validate name
     if name.trim().is_empty() {
@@ -33,6 +35,12 @@ pub fn validate_item_input(
 
     // Parse and validate path
     let path = parse_classification_path(path_str)?;
+
+    // Validate that the path exists in the schema's classical hierarchy
+    validate_path_exists(&path, hierarchy).map_err(|e| ValidationError {
+        field: "path".to_string(),
+        message: e,
+    })?;
 
     Ok((name.trim().to_string(), path))
 }

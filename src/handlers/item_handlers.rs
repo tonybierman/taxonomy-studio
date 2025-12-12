@@ -93,14 +93,26 @@ fn register_save_edit(window: &MainWindow, app_state: &Rc<RefCell<AppState>>) {
         let new_path = main_window.get_edit_item_path().to_string();
         let facet_inputs = main_window.get_edit_facet_inputs();
 
-        // Validate inputs using validation module
-        let (validated_name, classical_path) = match validate_item_input(&new_name, &new_path) {
-            Ok(result) => result,
-            Err(e) => {
-                main_window.set_validation_error(SharedString::from(e.message));
+        // Get the classical hierarchy from the schema
+        let state_borrow = app_state.borrow();
+        let hierarchy = match state_borrow.schema.as_ref() {
+            Some(schema) => &schema.classical_hierarchy,
+            None => {
+                main_window.set_validation_error(SharedString::from("No schema loaded"));
                 return;
             }
         };
+
+        // Validate inputs using validation module
+        let (validated_name, classical_path) =
+            match validate_item_input(&new_name, &new_path, hierarchy) {
+                Ok(result) => result,
+                Err(e) => {
+                    main_window.set_validation_error(SharedString::from(e.message));
+                    return;
+                }
+            };
+        drop(state_borrow);
 
         // Collect facets from inputs using validation module
         let facets_map = collect_facets(&facet_inputs);
@@ -188,14 +200,26 @@ fn register_save_new_item(window: &MainWindow, app_state: &Rc<RefCell<AppState>>
         let new_path = main_window.get_new_item_path().to_string();
         let facet_inputs = main_window.get_create_facet_inputs();
 
-        // Validate inputs using validation module
-        let (validated_name, classical_path) = match validate_item_input(&new_name, &new_path) {
-            Ok(result) => result,
-            Err(e) => {
-                main_window.set_validation_error(SharedString::from(e.message));
+        // Get the classical hierarchy from the schema
+        let state_borrow = app_state.borrow();
+        let hierarchy = match state_borrow.schema.as_ref() {
+            Some(schema) => &schema.classical_hierarchy,
+            None => {
+                main_window.set_validation_error(SharedString::from("No schema loaded"));
                 return;
             }
         };
+
+        // Validate inputs using validation module
+        let (validated_name, classical_path) =
+            match validate_item_input(&new_name, &new_path, hierarchy) {
+                Ok(result) => result,
+                Err(e) => {
+                    main_window.set_validation_error(SharedString::from(e.message));
+                    return;
+                }
+            };
+        drop(state_borrow);
 
         // Collect facets from inputs using validation module
         let facets_map = collect_facets(&facet_inputs);

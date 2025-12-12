@@ -239,3 +239,54 @@ fn build_valid_paths(
         }
     }
 }
+
+/// Validate that a classification path exists in the classical hierarchy
+/// Returns Ok(()) if the path is valid, or Err with an error message
+pub fn validate_path_exists(
+    path: &[String],
+    hierarchy: &crate::models::ClassicalHierarchy,
+) -> Result<(), String> {
+    // Empty path is invalid
+    if path.is_empty() {
+        return Err("Classification path cannot be empty".to_string());
+    }
+
+    // First element must be the root
+    if path[0] != hierarchy.root {
+        return Err(format!(
+            "Classification path must start with root '{}', found '{}'",
+            hierarchy.root, path[0]
+        ));
+    }
+
+    // If path only has root, it's valid
+    if path.len() == 1 {
+        return Ok(());
+    }
+
+    // Build valid paths map
+    let mut valid_paths = HashMap::new();
+    build_valid_paths(&hierarchy.root, &hierarchy.children, &mut valid_paths);
+
+    // Validate each parent-child relationship in the path
+    for i in 0..path.len() - 1 {
+        let parent = &path[i];
+        let child = &path[i + 1];
+
+        if let Some(valid_children) = valid_paths.get(parent) {
+            if !valid_children.contains(child) {
+                return Err(format!(
+                    "'{}' is not a valid child of '{}' in the hierarchy",
+                    child, parent
+                ));
+            }
+        } else {
+            return Err(format!(
+                "'{}' has no defined children in the hierarchy",
+                parent
+            ));
+        }
+    }
+
+    Ok(())
+}

@@ -18,4 +18,4 @@ pub use models::{
 pub use schema::{build_schema_from_json, extract_classical_hierarchy, extract_faceted_dimensions};
 pub use schema_validation::validate_against_schema;
 pub use sorting::{normalize_for_sorting, sort_items, strip_leading_articles};
-pub use validation::validate_taxonomy;
+pub use validation::{validate_path_exists, validate_taxonomy};
